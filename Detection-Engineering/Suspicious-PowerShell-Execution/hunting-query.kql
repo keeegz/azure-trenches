@@ -1,0 +1,23 @@
+    // Suspicious PowerShell Execution via Windows Script Host
+    // Data source: Microsoft Defender XDR - DeviceProcessEvents
+    // Objective: Identify PowerShell processes launched by Windows scripting engines.
+    // Note: This behavior is suspicious in context, not inherently malicious.
+
+    DeviceProcessEvents
+    | where Timestamp > ago(7d)
+    | where FileName in~ ("powershell.exe", "pwsh.exe")
+    | where InitiatingProcessFileName in~ ("wscript.exe", "cscript.exe")
+    | project
+        Timestamp,
+        DeviceName,
+        DeviceId,
+        FileName,
+        ProcessId,
+        ProcessCreationTime,
+        ProcessCommandLine,
+        InitiatingProcessFileName,
+        InitiatingProcessId,
+        InitiatingProcessCommandLine,
+        AccountName
+    | sort by Timestamp desc
+  
