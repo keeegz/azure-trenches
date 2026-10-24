@@ -76,6 +76,15 @@ This investigation demonstrates that suspicious process ancestry is an investiga
 The reusable KQL hunting query is available in [hunting-query.kql](hunting-query.kql).
 
 The query identifies PowerShell processes initiated by Windows Script Host across onboarded endpoints.
+## Investigation Evidence
+
+### Process Tree Analysis
+
+Microsoft Defender XDR Advanced Hunting identified three PowerShell execution events on October 22, 2026.
+
+The process tree confirms that `wscript.exe` launched `powershell.exe` through the controlled `test.vbs` script.
+
+![Defender XDR process tree](screenshots/process-tree.PNG)
 
 ## Lessons Learned
 
