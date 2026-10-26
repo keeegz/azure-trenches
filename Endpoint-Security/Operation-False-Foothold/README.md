@@ -89,3 +89,85 @@ to establish malicious discovery activity.
 
 *Screenshot pending — Defender device onboarding and
 Advanced Hunting process telemetry.*
+
+---
+
+## Stage 2 — Initial PowerShell Execution
+
+### Objective
+
+Simulate the execution of a PowerShell script on the Windows 11 endpoint and determine whether Microsoft Defender for Endpoint captures the associated process activity.
+
+This stage establishes a baseline for investigating script execution and parent-child process relationships.
+
+### Execution Procedure
+
+A benign PowerShell script named `Stage1.ps1` was created in the following directory:
+
+`C:\AzureTrenches\Lab6\Stage1.ps1`
+
+The script contained:
+
+```powershell
+Write-Output "OPERATION FALSE FOOTHOLD - STAGE 1"
+Write-Output "Simulated initial execution"
+Write-Output "Timestamp: $(Get-Date -Format o)"
+Write-Output "Computer: $env:COMPUTERNAME"
+```
+
+The script was executed using:
+
+```powershell
+powershell.exe -NoProfile -File "C:\AzureTrenches\Lab6\Stage1.ps1"
+```
+
+The command completed successfully and displayed the expected lab identifier, timestamp, and computer name.
+
+### KQL — PowerShell Execution Investigation
+
+Microsoft Defender XDR Advanced Hunting was used to identify the process execution:
+
+```kql
+DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where FileName =~ "powershell.exe"
+| where ProcessCommandLine contains "Stage1.ps1"
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName
+| order by Timestamp desc
+```
+
+### Results
+
+Microsoft Defender successfully recorded the PowerShell process execution.
+
+| Field | Observed Value |
+|---|---|
+| Device | `nyc-cl11` |
+| Process | `powershell.exe` |
+| Parent process | `powershell.exe` |
+| Account | `azureuser` |
+| Executed script | `Stage1.ps1` |
+| Execution date | October 26, 2026 |
+
+The telemetry demonstrated that Defender could identify the executed PowerShell process, its command-line arguments, and its initiating process.
+
+The initial hunting attempt did not immediately return the event. A subsequent query identified the execution, illustrating that endpoint telemetry may not always be available for hunting immediately after an action occurs.
+
+### MITRE ATT&CK Mapping
+
+**T1059.001 — Command and Scripting Interpreter: PowerShell**
+
+The simulated activity used PowerShell to execute a local script.
+
+This technique mapping describes the observed execution mechanism; it does not imply that the benign script was malicious.
+
+### Evidence
+
+*Screenshot pending — PowerShell script execution and Defender XDR Advanced Hunting results.*
