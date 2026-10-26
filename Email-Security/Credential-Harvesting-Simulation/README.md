@@ -51,6 +51,7 @@ A controlled phishing simulation was configured in Microsoft Defender for Office
 - **User training:** Assigned through Attack Simulation Training
 
 ### 2. Phishing Email Examination
+![Simulated phishing email impersonating Microsoft, showing the sender address, urgency, and Update Now button](screenshots/phishing-email.PNG)
 
 The simulation delivered an email with the subject **Warning: Verify your email address**, impersonating the Microsoft account team.
 
@@ -62,6 +63,7 @@ Observed indicators included:
 - An **Update Now** button directing the recipient to a simulated sign-in page.
 
 ### 3. Controlled User Interaction
+![Simulated Microsoft sign-in page hosted on a non-Microsoft domain](screenshots/simulated-login-page.PNG)
 
 The designated lab user opened the message and followed the embedded link. The destination displayed a Microsoft-branded sign-in interface hosted on a non-Microsoft authentication domain.
 
@@ -72,6 +74,7 @@ All activity was performed within an authorized lab environment. The simulation 
 ## Investigation Findings
 
 ### 1. Attack Simulation Training Results
+![Microsoft Defender Attack Simulation Training results showing message delivery, URL click activity, and zero credential submissions](screenshots/simulation-report.PNG)
 
 Microsoft Defender for Office 365 Attack Simulation Training
 confirmed the following activity:
@@ -90,6 +93,7 @@ with the phishing link without submitting credentials.
 A link click alone was not evidence of credential compromise.
 
 ### 2. Defender Explorer Investigation
+![Defender Explorer showing three email records, including the training assignment notification, but not the simulated phishing payload](screenshots/explorer-results.PNG)
 
 The simulated phishing message was not returned by a
 subject-based search in Defender Explorer.
@@ -103,6 +107,7 @@ the investigation period, but the simulated phishing payload
 was not visible in the results reviewed.
 
 ### 3. Advanced Hunting — EmailEvents
+![Defender Advanced Hunting EmailEvents query showing four email subjects, including the training notification, but no simulated phishing payload](screenshots/email-events-query.PNG)
 
 A search of `EmailEvents` for the simulated message subject
 returned no matching records.
@@ -116,6 +121,7 @@ was available, while the simulated phishing payload was not
 found using the queries performed.
 
 ### 4. Advanced Hunting — UrlClickEvents
+![Defender Advanced Hunting UrlClickEvents showing the simulated phishing link interaction with ClickAllowed and IsClickedThrough set to zero](screenshots/url-click-event.PNG)
 
 A search of `UrlClickEvents` identified the simulated phishing
 link interaction.
@@ -137,6 +143,7 @@ that the event was not recorded as a user clicking through
 a warning or block page.
 
 ### 5. Cross-Table Correlation
+![Defender Advanced Hunting leftouter join correlating UrlClickEvents with EmailEvents, showing a recorded URL click without matching email fields](screenshots/click-correlation.PNG)
 
 A `leftouter` join between `UrlClickEvents` and `EmailEvents`
 on `NetworkMessageId` retained the URL-click record but
