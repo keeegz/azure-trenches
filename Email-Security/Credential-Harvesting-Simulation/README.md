@@ -12,7 +12,12 @@ using Microsoft Defender XDR and Kusto Query Language (KQL).
 
 ## Investigation Status
 
-Completed — documentation in progress.
+Completed — documented and reviewed.
+
+## Investigation Artifacts
+
+- [KQL Hunting Queries](hunting-queries.kql)
+- [Evidence Screenshots](screenshots/)
 
 ## Lab Environment
 
@@ -255,4 +260,3 @@ The exercise reinforced the importance of evidence-based
 conclusions, cross-source validation, and transparent
 documentation of investigation limitations.
 
-No actual credential compromise was observed or demonstrated.
