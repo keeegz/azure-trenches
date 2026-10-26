@@ -1,0 +1,88 @@
+// Query 1: Search for the simulated phishing email
+// Purpose: Determine whether the simulated payload appears in EmailEvents.
+// Observed result: No matching records during the investigation.
+
+EmailEvents
+| where Timestamp > ago(2d)
+| where Subject contains "Verify your email address"
+| project
+    Timestamp,
+    NetworkMessageId,
+    SenderFromAddress,
+    RecipientEmailAddress,
+    Subject,
+    DeliveryAction,
+    DeliveryLocation,
+    ThreatTypes
+| order by Timestamp desc
+
+// Query 2: Validate EmailEvents telemetry availability
+// Purpose: Identify email subjects ingested during the investigation window.
+// Observed result: Four messages, including the training assignment
+// notification, but not the simulated phishing payload.
+
+EmailEvents
+| where Timestamp > ago(2d)
+| summarize MessageCount = count() by Subject
+| order by MessageCount desc
+
+// Query 3: Investigate URL-click telemetry
+// Purpose: Identify URL interactions recorded by Defender for Office 365.
+// Observed result: One ClickAllowed event associated with the simulation.
+
+UrlClickEvents
+| where Timestamp > ago(2d)
+| project
+    Timestamp,
+    AccountUpn,
+    Url,
+    ActionType,
+    IsClickedThrough,
+    NetworkMessageId
+| order by Timestamp desc
+
+// Query 4: Correlate URL clicks with email events
+// Purpose: Determine whether the simulated phishing click can be linked
+// to an EmailEvents record using NetworkMessageId.
+// Observed result: One URL-click record; no matching email fields.
+
+UrlClickEvents
+| where Timestamp > ago(2d)
+| where Url contains "windocyte.com"
+| join kind=leftouter (
+    EmailEvents
+    | where Timestamp > ago(2d)
+    | project
+        NetworkMessageId,
+        EmailTimestamp = Timestamp,
+        Subject,
+        SenderFromAddress,
+        DeliveryAction
+) on NetworkMessageId
+| project
+    Timestamp,
+    AccountUpn,
+    Url,
+    ActionType,
+    NetworkMessageId,
+    EmailTimestamp,
+    Subject,
+    SenderFromAddress,
+    DeliveryAction
+| order by Timestamp desc
+
+// Query 5: Aggregate simulated phishing URL clicks
+// Purpose: Calculate total click events, unique users, first/last
+// interaction timestamps, and recorded action types.
+// Observed result: One ClickAllowed event from one unique user.
+
+UrlClickEvents
+| where Timestamp > ago(2d)
+| where Url contains "windocyte.com"
+| summarize
+    TotalClicks = count(),
+    FirstClick = min(Timestamp),
+    LastClick = max(Timestamp),
+    Actions = make_set(ActionType),
+    Users = dcount(AccountUpn)
+    by NetworkMessageId
