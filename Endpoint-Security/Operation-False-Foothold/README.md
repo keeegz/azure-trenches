@@ -32,3 +32,60 @@ and resolved as expected security-testing activity.
 | Query Language | Kusto Query Language (KQL) |
 | Framework | MITRE ATT&CK |
 | Lab Date | October 26, 2026 |
+
+---
+
+## Stage 1 — Endpoint Validation
+
+### Objective
+
+Verify that the Windows 11 Azure VM was successfully onboarded
+to Microsoft Defender for Endpoint and generating endpoint telemetry
+before beginning the attack simulation.
+
+### Validation Procedure
+
+1. Navigated to Microsoft Defender XDR.
+2. Opened **Assets → Devices**.
+3. Located the Windows 11 endpoint `nyc-cl11`.
+4. Confirmed that the Defender sensor was reporting as **Active**.
+5. Executed `whoami` and `hostname` from PowerShell to generate
+   benign process activity.
+
+### KQL — Process Telemetry Validation
+```kql
+DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where FileName in~ ("whoami.exe", "hostname.exe")
+| project
+    Timestamp,
+    DeviceName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    AccountName
+| order by Timestamp desc
+```
+### Results
+
+Microsoft Defender successfully recorded process execution
+telemetry from `nyc-cl11`.
+
+- **Sensor health:** Active
+- **Process events:** 225 events observed during the initial
+  24-hour validation window
+- **Validated processes:** `whoami.exe` and `hostname.exe`
+- **Parent process:** `powershell.exe`
+
+These findings confirmed that the endpoint was producing the
+telemetry required for subsequent hunting and detection exercises.
+
+**MITRE ATT&CK:** Not applicable to onboarding validation.
+The commands were used to verify telemetry collection, not
+to establish malicious discovery activity.
+
+### Evidence
+
+*Screenshot pending — Defender device onboarding and
+Advanced Hunting process telemetry.*
