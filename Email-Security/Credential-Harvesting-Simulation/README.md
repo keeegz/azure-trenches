@@ -170,4 +170,89 @@ The investigation was limited to one authorized simulation,
 one test account, the available tenant telemetry, and the
 query time windows used.
 
+## Detection Opportunities
+
+### 1. Correlate URL Clicks with Email Telemetry
+
+SOC analysts can correlate `UrlClickEvents` with `EmailEvents`
+using `NetworkMessageId` to investigate potentially malicious
+links and their originating messages.
+
+A `leftouter` join preserves URL-click activity even when
+corresponding email telemetry is unavailable.
+
+Unmatched records should prompt additional investigation
+rather than an assumption of compromise or a product failure.
+
+### 2. Investigate Suspicious Authentication Destinations
+
+Phishing investigations should examine URLs that imitate
+legitimate identity providers, particularly Microsoft-branded
+sign-in pages hosted outside expected authentication domains.
+
+Domain reputation, URL structure, message context, user
+interaction, and available identity telemetry should be
+considered together.
+
+An unfamiliar domain alone is not sufficient evidence
+of malicious activity.
+
+### 3. Correlate Phishing Clicks with Identity Activity
+
+Following a suspicious URL click, analysts should review
+available Microsoft Entra sign-in logs for unusual authentication
+activity, including unfamiliar locations, devices, failed
+sign-ins, and risk detections.
+
+In this lab, no credentials were submitted. No subsequent
+identity compromise was established by the simulation evidence.
+
+## MITRE ATT&CK Mapping
+
+| Technique | ID | Relevance |
+|---|---|---|
+| Phishing: Spearphishing Link | T1566.002 | The simulated email contained a link directing the recipient to a credential-harvesting page. |
+
+**Scope note:** The simulation demonstrated phishing-link
+delivery and interaction, not credential theft, token theft,
+or unauthorized access.
+
+## Lessons Learned
+
+1. **Validate telemetry across multiple sources.**
+   Attack Simulation Training, Defender Explorer, and Advanced
+   Hunting may provide different perspectives on the same
+   simulated activity.
+
+2. **Do not equate a click with compromise.**
+   The simulation recorded a successful click without
+   credential submission.
+
+3. **Preserve unmatched records during correlation.**
+   A `leftouter` join can retain useful evidence that an
+   `inner` join would discard.
+
+4. **Document visibility limitations precisely.**
+   Missing records within a particular query window do not
+   establish a universal product limitation.
+
+5. **Maintain reproducible investigation artifacts.**
+   KQL queries, screenshots, timestamps, and documented
+   assumptions support repeatable analysis.
+
+## Conclusion
+
+This authorized Microsoft Defender for Office 365
+credential-harvesting simulation demonstrated phishing-email
+analysis, user-interaction validation, KQL-based threat
+hunting, and cross-table telemetry correlation.
+
+The primary investigative finding was a recorded phishing
+URL click without a corresponding email record in the queried
+`EmailEvents` dataset. No credential compromise was observed.
+
+The exercise reinforced the importance of evidence-based
+conclusions, cross-source validation, and transparent
+documentation of investigation limitations.
+
 No actual credential compromise was observed or demonstrated.
