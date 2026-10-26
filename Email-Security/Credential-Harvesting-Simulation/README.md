@@ -68,3 +68,99 @@ The designated lab user opened the message and followed the embedded link. The d
 No real credentials were entered or submitted. The simulation report subsequently recorded the message as delivered, read, and clicked, with zero credential submissions.
 
 All activity was performed within an authorized lab environment. The simulation was not a real-world compromise.
+
+## Investigation Findings
+
+### 1. Attack Simulation Training Results
+
+Microsoft Defender for Office 365 Attack Simulation Training
+confirmed the following activity:
+
+| Metric | Result |
+|---|---|
+| Messages delivered | 1/1 |
+| Messages read | 1/1 |
+| Phishing links clicked | 1/1 |
+| Credentials submitted | 0/1 |
+| Users compromised | 0/1 |
+| Users who reported the message | 0/1 |
+
+The simulation confirmed that the designated user interacted
+with the phishing link without submitting credentials.
+A link click alone was not evidence of credential compromise.
+
+### 2. Defender Explorer Investigation
+
+The simulated phishing message was not returned by a
+subject-based search in Defender Explorer.
+
+Removing the subject filter revealed other tenant email
+activity, including a Microsoft Attack Simulation Training
+assignment notification.
+
+This established that Explorer contained email telemetry for
+the investigation period, but the simulated phishing payload
+was not visible in the results reviewed.
+
+### 3. Advanced Hunting — EmailEvents
+
+A search of `EmailEvents` for the simulated message subject
+returned no matching records.
+
+A broader query grouping email events by subject returned
+four other messages, including the training assignment
+notification.
+
+This supported the observation that standard email telemetry
+was available, while the simulated phishing payload was not
+found using the queries performed.
+
+### 4. Advanced Hunting — UrlClickEvents
+
+A search of `UrlClickEvents` identified the simulated phishing
+link interaction.
+
+| Field | Observed value |
+|---|---|
+| Event timestamp | October 26, 2026, 1:31:51 PM |
+| ActionType | `ClickAllowed` |
+| IsClickedThrough | `0` |
+| Total matching clicks | 1 |
+| Unique users | 1 |
+| NetworkMessageId | Present |
+
+`ClickAllowed` indicated that the recorded URL interaction
+was allowed.
+
+`IsClickedThrough = 0` did not negate the click; it indicated
+that the event was not recorded as a user clicking through
+a warning or block page.
+
+### 5. Cross-Table Correlation
+
+A `leftouter` join between `UrlClickEvents` and `EmailEvents`
+on `NetworkMessageId` retained the URL-click record but
+returned no matching email fields.
+
+The investigation therefore confirmed URL-click telemetry
+without locating a corresponding email record in the
+queried `EmailEvents` data.
+
+### 6. Key Finding and Limitations
+
+**Key finding:** Attack Simulation Training recorded delivery
+and user interaction, while Defender XDR Advanced Hunting
+independently recorded the allowed URL click.
+
+However, the simulated phishing payload was not found in
+Defender Explorer or `EmailEvents` during this investigation.
+
+This represents an observed telemetry visibility discrepancy
+within the lab, not proof that Microsoft Defender universally
+excludes attack simulation messages from email telemetry.
+
+The investigation was limited to one authorized simulation,
+one test account, the available tenant telemetry, and the
+query time windows used.
+
+No actual credential compromise was observed or demonstrated.
