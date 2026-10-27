@@ -843,7 +843,10 @@ The incident was correctly classified as expected security-testing activity afte
 
 ### Evidence
 
-*Screenshot pending — Incident #782 overview, attack story, process timeline, Evidence and Response tab, and final resolved classification.*
+![Stage 7 - Defender XDR incident 782 attack story and process evidence](Screenshots/08-incident-attack-story.PNG)
+
+![Stage 7 - Incident resolution and security testing classification](Screenshots/09-incident-resolution.PNG)
+
 
 ---
 
