@@ -413,3 +413,129 @@ The task was subsequently unregistered following evidence collection.
 ### Evidence
 
 *Screenshot pending — Scheduled-task registration, successful execution results, and Defender XDR process tree showing `svchost.exe` → `powershell.exe`.*
+
+---
+
+## Stage 5 — Outbound HTTPS Communication
+
+### Objective
+
+Simulate outbound HTTPS communication from a Windows 11 endpoint and investigate the resulting network telemetry using Microsoft Defender XDR.
+
+The purpose was to determine whether Defender could associate a network connection with the PowerShell process responsible for initiating it.
+
+This stage used a legitimate public test domain and did not involve command-and-control infrastructure or data exfiltration.
+
+### Execution Procedure
+
+The following command was executed from PowerShell on `nyc-cl11`:
+
+```powershell
+Invoke-WebRequest `
+    -Uri "https://example.com" `
+    -Method GET `
+    -UseBasicParsing
+```
+
+The command initiated an HTTPS GET request to `example.com`.
+
+PowerShell returned the following response:
+
+| Field | Observed Value |
+|---|---|
+| Destination | `https://example.com` |
+| HTTP status code | `200` |
+| Status description | `OK` |
+| Protocol | HTTPS |
+| Request method | GET |
+
+The successful HTTP response confirmed that the endpoint could communicate with the external destination.
+
+### KQL — Outbound Network Investigation
+
+Microsoft Defender XDR Advanced Hunting was used to investigate the resulting network connection:
+
+```kql
+DeviceNetworkEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where InitiatingProcessFileName =~ "powershell.exe"
+| where RemoteUrl contains "example.com"
+| project
+    Timestamp,
+    DeviceName,
+    ActionType,
+    InitiatingProcessFileName,
+    RemoteUrl,
+    RemoteIP,
+    RemotePort,
+    Protocol,
+    InitiatingProcessCommandLine
+| order by Timestamp desc
+```
+
+### Results
+
+Microsoft Defender successfully recorded the outbound network connection in `DeviceNetworkEvents`.
+
+| Field | Observed Value |
+|---|---|
+| Device | `nyc-cl11` |
+| Action type | `ConnectionSuccess` |
+| Initiating process | `powershell.exe` |
+| Remote URL | `example.com` |
+| Remote IP | `104.20.23.154` |
+| Remote port | `443` |
+| Protocol | TCP |
+
+The process tree associated the network activity with PowerShell, while the network event identified the external destination and connection details.
+
+This provided visibility into both the process responsible for the communication and the destination it contacted.
+
+### Process-to-Network Correlation
+
+The investigation established the following relationship:
+
+```text
+powershell.exe
+    |
+    +-- Invoke-WebRequest
+            |
+            +-- HTTPS GET
+                    |
+                    +-- example.com
+                        104.20.23.154:443
+```
+
+The PowerShell command returned HTTP `200 OK`, while Defender independently recorded a successful network connection.
+
+These observations were consistent with the authorized test request.
+
+### MITRE ATT&CK Context
+
+**T1071.001 — Application Layer Protocol: Web Protocols**
+
+Adversaries may use HTTP or HTTPS for command-and-control communication.
+
+This lab demonstrated outbound web communication and associated endpoint telemetry. It did not simulate an actual command-and-control channel.
+
+The technique is included as contextual detection-engineering knowledge rather than evidence of malicious C2 activity.
+
+### Analyst Findings
+
+An outbound HTTPS connection alone is insufficient to establish malicious activity.
+
+An analyst should consider:
+
+- The initiating process and its command-line arguments.
+- The reputation and purpose of the destination.
+- Whether the destination is expected for the endpoint.
+- The frequency and timing of connections.
+- Whether the communication correlates with suspicious process activity.
+- Whether any evidence of data exfiltration or command-and-control behavior exists.
+
+In this case, the destination was a legitimate test domain, the request was authorized, and no malicious network activity was identified.
+
+### Evidence
+
+*Screenshot pending — PowerShell HTTP response and Defender XDR Advanced Hunting results showing the successful outbound connection to `example.com`.*
