@@ -87,8 +87,11 @@ to establish malicious discovery activity.
 
 ### Evidence
 
-*Screenshot pending — Defender device onboarding and
-Advanced Hunting process telemetry.*
+
+![Stage 1 - Defender endpoint onboarding](Screenshots/01-endpoint-onboarding.PNG)
+
+![Stage 1 - Process telemetry validation](Screenshots/02-process-telemetry-validation.PNG)
+
 
 ---
 
