@@ -275,7 +275,8 @@ In this lab, the commands were explicitly executed as part of a controlled secur
 
 ### Evidence
 
-*Screenshot pending — Defender XDR Advanced Hunting results showing discovery commands and the `net.exe` → `net1.exe` process relationship.*
+
+![Stage 3 - System discovery commands captured in Defender XDR](Screenshots/04-system-discovery-telemetry.PNG)
 
 
 ---
