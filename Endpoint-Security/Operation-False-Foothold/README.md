@@ -1036,6 +1036,18 @@ A production deployment would require:
 
 The Lab 6 rule should not be deployed unchanged as a production detection.
 
+
+### Evidence
+
+#### Scheduled Task Cleanup
+
+![Stage 8 - Scheduled task removal verification](Screenshots/10-scheduled-task-cleanup.PNG)
+
+#### Custom Detection Rule Cleanup
+
+![Stage 8 - Disabled Defender XDR custom detection rule](Screenshots/11-disabled-detection-rule.PNG)
+
+
 ### Limitations
 
 Several limitations should be considered when interpreting the results:
