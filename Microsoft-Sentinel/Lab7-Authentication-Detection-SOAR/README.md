@@ -152,3 +152,55 @@ The scheduled analytics rule successfully generated an alert and created Microso
 The incident was classified as Medium severity and contained the expected account, host, and IP entities.
 
 This validated the transition from raw Windows security telemetry to an actionable security incident.
+
+## SOAR Automation — Incident Enrichment
+
+### Automation Objective
+
+The objective was to demonstrate an automated response to a Microsoft Sentinel security incident without requiring manual analyst intervention.
+
+An incident-triggered automation rule was configured to apply a classification tag whenever an incident was created by the Lab 7 authentication detection rule.
+
+### Automation Rule Configuration
+
+| Configuration | Value |
+|---|---|
+| Automation rule | Lab7 - SOAR Failed Logon Response |
+| Trigger | When incident is created |
+| Condition | Analytics rule name matches the Lab 7 detection |
+| Action | Add incident tag |
+| Tag | `LAB7-SOAR` |
+| Rule order | 1 |
+| Expiration | Indefinite |
+
+### Execution Validation
+
+Microsoft Defender incident **1011** was reviewed after the analytics rule generated an alert.
+
+The incident contained the expected classification tag, `LAB7-SOAR`.
+
+The incident activity log independently confirmed that the automation rule executed successfully.
+
+| Validation | Observed Result |
+|---|---|
+| Incident created | Successful |
+| Alert associated with incident | Successful |
+| Account, host, and IP entities mapped | Successful |
+| Automation rule triggered | Successful |
+| `LAB7-SOAR` tag applied | Successful |
+| Activity status | Completed |
+| Execution type | Automated |
+
+### Operational Significance
+
+Automated incident enrichment can improve SOC triage by applying consistent classifications to security incidents as they are created.
+
+This approach can support incident routing, filtering, reporting, and downstream response workflows.
+
+### Scope and Limitations
+
+This lab implemented Microsoft Sentinel automation-rule-based incident enrichment.
+
+No Azure Logic Apps playbook, automated account disablement, endpoint isolation, or other containment action was deployed.
+
+The successful execution demonstrates automated incident tagging, not automated threat remediation.
