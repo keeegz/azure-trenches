@@ -60,7 +60,7 @@ The following event attributes were validated:
 | Computer | NYC-CL11 | Windows endpoint generating telemetry |
 
 ### KQL Detection Query
-
+**Standalone detection query:** [failed-network-logons.kql](failed-network-logons.kql)
 ```kusto
 let DetectionWindow = 1h;
 let FailureThreshold = 2;
