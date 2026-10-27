@@ -234,3 +234,38 @@ Incident 1011 demonstrates successful alert generation, incident creation, and e
 The incident activity log confirms that the Lab 7 automation rule successfully applied the `LAB7-SOAR` tag with a Completed execution status.
 
 ![SOAR Automation Execution](Screenshots/Lab7_SOAR_Automation_Execution.PNG)
+
+## Engineering Findings & Lessons Learned
+
+### Key Findings
+
+1. **Telemetry validation is essential.** Windows Security Event ID 4625 was verified locally before confirming ingestion into Microsoft Sentinel.
+
+2. **Detection engineering requires context.** Filtering by Logon Type 3, account, and source IP provided more focused results than simply counting all failed authentication events.
+
+3. **Entity mapping improves investigation.** Associating the account, endpoint, and IP address with the alert provided additional context in Microsoft Defender's incident graph.
+
+4. **Automation must be validated.** The presence of an automation rule alone does not prove successful execution. The incident activity log confirmed that the `LAB7-SOAR` tag was applied automatically.
+
+### Detection Limitations
+
+- The two-failure threshold was intentionally low for laboratory testing.
+- The query specifically targeted the `SOAR-Test` account rather than all accounts.
+- The source address `127.0.0.1` represented controlled local testing, not an external attacker.
+- A one-hour detection window could miss authentication attempts distributed across longer periods.
+- Incident tagging provides classification but does not contain or remediate threats.
+
+### Potential Improvements
+
+- Develop production-oriented thresholds using historical authentication baselines.
+- Expand detection coverage to additional accounts and source addresses.
+- Add contextual enrichment for privileged accounts and suspicious source IPs.
+- Evaluate detection performance against false positives and expected administrative activity.
+- Implement an Azure Logic Apps playbook for approved response actions.
+- Introduce exception handling, execution monitoring, and safeguards before enabling automated containment.
+
+## Conclusion
+
+This lab demonstrated an end-to-end Microsoft security detection and incident-enrichment workflow, beginning with controlled Windows authentication failures and ending with verified Microsoft Sentinel automation.
+
+The project strengthened practical experience in KQL detection engineering, scheduled analytics rules, MITRE ATT&CK mapping, entity correlation, Microsoft Defender incident investigation, and automated SOC workflows.
