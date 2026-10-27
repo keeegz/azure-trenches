@@ -273,3 +273,143 @@ In this lab, the commands were explicitly executed as part of a controlled secur
 ### Evidence
 
 *Screenshot pending — Defender XDR Advanced Hunting results showing discovery commands and the `net.exe` → `net1.exe` process relationship.*
+
+
+---
+
+## Stage 4 — Scheduled Task Persistence Simulation
+
+### Objective
+
+Simulate the creation and execution of a Windows scheduled task and investigate the resulting endpoint telemetry using Microsoft Defender XDR.
+
+Scheduled tasks are legitimate Windows automation mechanisms but may also be abused by adversaries to execute commands or establish persistence.
+
+This exercise used a benign, one-time scheduled task. It did not establish recurring persistence.
+
+### Execution Procedure
+
+A scheduled task named `AzureTrenches-Lab6` was registered on the Windows 11 endpoint `nyc-cl11`.
+
+The task was configured to launch PowerShell and append the current timestamp to a local text file.
+
+```powershell
+$LabPath = "C:\AzureTrenches\Lab6"
+
+$Action = New-ScheduledTaskAction `
+    -Execute "powershell.exe" `
+    -Argument "-NoProfile -Command `"Get-Date | Out-File '$LabPath\TaskExecution.txt' -Append`""
+
+$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddMinutes(10)
+
+Register-ScheduledTask `
+    -TaskName "AzureTrenches-Lab6" `
+    -Action $Action `
+    -Trigger $Trigger `
+    -Description "Authorized Lab 6 persistence simulation"
+```
+
+The task was scheduled to execute approximately ten minutes after registration.
+
+### Execution Validation
+
+Following the scheduled execution time, PowerShell was used to inspect the task's execution status:
+
+```powershell
+Get-ScheduledTaskInfo -TaskName "AzureTrenches-Lab6" |
+    Select-Object LastRunTime, LastTaskResult, NextRunTime
+
+Get-Content "C:\AzureTrenches\Lab6\TaskExecution.txt"
+```
+
+The following results were observed:
+
+| Field | Observed Value |
+|---|---|
+| Task name | `AzureTrenches-Lab6` |
+| Last run time | October 26, 2026, 2:48:10 PM (VM local time) |
+| Last task result | `0` — Successful |
+| Output artifact | `TaskExecution.txt` |
+| Output timestamp | October 26, 2026, 2:48:11 PM |
+
+These findings confirmed that Windows Task Scheduler successfully executed the configured PowerShell action.
+
+### KQL — Scheduled Task Execution Investigation
+
+The following Advanced Hunting query was used to investigate the resulting process execution:
+
+```kql
+DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where FileName =~ "powershell.exe"
+| where InitiatingProcessFileName =~ "svchost.exe"
+| where ProcessCommandLine contains "TaskExecution.txt"
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    ProcessId,
+    InitiatingProcessId
+| order by Timestamp desc
+```
+
+### Results
+
+Microsoft Defender recorded the scheduled PowerShell execution.
+
+| Field | Observed Value |
+|---|---|
+| Device | `nyc-cl11` |
+| Process | `powershell.exe` |
+| Process ID | `7068` |
+| Parent process | `svchost.exe` |
+| Parent process ID | `1964` |
+| Account | `azureuser` |
+| Defender event time | October 26, 2026, 4:48:10 PM (portal display) |
+| Command-line artifact | `TaskExecution.txt` |
+
+The process tree showed the following execution relationship:
+
+```text
+wininit.exe
+    └── services.exe
+         └── svchost.exe
+              └── powershell.exe
+                   └── Get-Date | Out-File TaskExecution.txt
+```
+
+The `svchost.exe` parent process was associated with Windows Task Scheduler services.
+
+This provided additional context connecting the observed PowerShell execution to the scheduled-task activity.
+
+The process telemetry independently confirmed execution of the configured command. It did not, by itself, establish that the original task-registration operation was recorded.
+
+### MITRE ATT&CK Mapping
+
+**T1053.005 — Scheduled Task/Job: Scheduled Task**
+
+Adversaries may abuse Windows scheduled tasks to execute commands or maintain persistence.
+
+In this lab, the technique was emulated using an authorized, one-time task that performed a harmless file-writing operation.
+
+### Analyst Findings
+
+A PowerShell process launched by a Windows service can warrant investigation, but this behavior is not inherently malicious.
+
+Relevant investigative considerations include:
+
+- Whether the task was authorized.
+- The parent process and execution context.
+- The PowerShell command-line arguments.
+- The scheduled-task configuration and execution history.
+- Any additional suspicious activity associated with the endpoint.
+
+The task was subsequently unregistered following evidence collection.
+
+### Evidence
+
+*Screenshot pending — Scheduled-task registration, successful execution results, and Defender XDR process tree showing `svchost.exe` → `powershell.exe`.*
