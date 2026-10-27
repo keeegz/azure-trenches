@@ -107,3 +107,48 @@ The query successfully returned a matching result containing:
 - Failed attempts: `2`
 
 This confirmed successful ingestion of Windows authentication telemetry and execution of the custom KQL detection logic.
+
+## Microsoft Sentinel Analytics Rule Deployment
+
+### Rule Configuration
+
+The validated KQL detection query was deployed as a scheduled Microsoft Sentinel analytics rule.
+
+| Configuration | Value |
+|---|---|
+| Rule name | Lab7 - Repeated Failed Network Logons - SOAR |
+| Rule type | Scheduled |
+| Severity | Medium |
+| MITRE ATT&CK | Credential Access / T1110 |
+| Query frequency | Every 5 minutes |
+| Lookup period | Previous 1 hour |
+| Alert trigger | Query results greater than 0 |
+| Event grouping | All matching results grouped into one alert |
+| Suppression | Disabled |
+| Incident creation | Enabled |
+
+### Entity Mapping
+
+Three entity types were configured to provide investigation context:
+
+| Entity | Identifier | KQL Column |
+|---|---|---|
+| Account | Name | Account |
+| Host | HostName | Computer |
+| IP | Address | IpAddress |
+
+Entity mapping allows Microsoft Defender to associate the resulting alert with the account, endpoint, and source IP observed in the authentication telemetry.
+
+### Incident Grouping
+
+Incident grouping was enabled for matching entities within a five-hour window.
+
+This configuration supports correlation of related alerts into incidents rather than treating every matching detection as an unrelated investigation.
+
+### Detection Outcome
+
+The scheduled analytics rule successfully generated an alert and created Microsoft Defender incident **1011**.
+
+The incident was classified as Medium severity and contained the expected account, host, and IP entities.
+
+This validated the transition from raw Windows security telemetry to an actionable security incident.
