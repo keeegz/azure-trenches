@@ -837,3 +837,234 @@ The incident was correctly classified as expected security-testing activity afte
 ### Evidence
 
 *Screenshot pending — Incident #782 overview, attack story, process timeline, Evidence and Response tab, and final resolved classification.*
+
+---
+
+## Stage 8 — Final Cleanup, Validation, and Lessons Learned
+
+### Objective
+
+Conclude Operation False Foothold by documenting the cleanup of simulated attack artifacts, validating the known lab state, reviewing detection-engineering outcomes, and identifying opportunities for improvement.
+
+The goal was to leave the environment without the active scheduled task or enabled lab-specific detection rule while preserving useful evidence for future analysis.
+
+### Scheduled Task Cleanup
+
+Following the successful scheduled-task execution and evidence collection, the task was removed using PowerShell:
+
+```powershell
+Unregister-ScheduledTask `
+    -TaskName "AzureTrenches-Lab6" `
+    -Confirm:$false
+```
+
+A subsequent verification command was executed:
+
+```powershell
+Get-ScheduledTask `
+    -TaskName "AzureTrenches-Lab6" `
+    -ErrorAction SilentlyContinue
+```
+
+The command returned no scheduled-task record.
+
+This confirmed that the simulated scheduled task was no longer registered.
+
+### Remaining Lab Artifacts
+
+The following command was executed to inspect the lab directory:
+
+```powershell
+Get-ChildItem "C:\AzureTrenches\Lab6" |
+    Select-Object Name, Length, LastWriteTime
+```
+
+Two benign files remained at the final verification checkpoint:
+
+| File | Size | Purpose |
+|---|---|---|
+| `Stage1.ps1` | 185 bytes | Initial PowerShell execution simulation |
+| `TaskExecution.txt` | 88 bytes | Scheduled-task execution output |
+
+These files contained authorized lab artifacts and were retained at the time of verification.
+
+The absence of the scheduled task did not mean that all local lab files had been deleted.
+
+### Custom Detection Rule Cleanup
+
+The custom detection rule was disabled after successfully generating the intended alert.
+
+| Field | Final State |
+|---|---|
+| Rule name | `LAB6 - Scheduled Task PowerShell Execution` |
+| Detection platform | Microsoft Defender XDR |
+| Validation result | Successfully generated an alert |
+| Alert severity | Low |
+| Associated incident | #782 |
+| Rule status | Disabled |
+| Automated remediation | None |
+
+Disabling the rule prevented it from continuing to run as an active scheduled lab detection.
+
+The rule configuration was retained for reference and potential future testing.
+
+### Incident Closure
+
+Incident #782 was investigated and resolved after the observed activity was correlated with the authorized lab exercise.
+
+| Field | Final State |
+|---|---|
+| Incident ID | `782` |
+| Incident title | `LAB6 - Suspicious Service-Launched PowerShell` |
+| Severity | Low |
+| Status | Resolved |
+| Classification | Informational, expected activity — Security testing |
+| Scheduled-task cleanup | Completed |
+| Automated containment | Not required |
+
+The incident was resolved based on the known task configuration, observed process telemetry, execution timestamps, and authorization context.
+
+### Final Validation Summary
+
+| Validation Objective | Result |
+|---|---|
+| Defender endpoint onboarding | Confirmed |
+| PowerShell process telemetry | Confirmed |
+| Host and account discovery telemetry | Confirmed |
+| Scheduled-task execution | Confirmed |
+| Scheduled-task process ancestry | Confirmed |
+| Outbound HTTPS network telemetry | Confirmed |
+| Custom detection alert generation | Confirmed |
+| Incident creation | Confirmed — #782 |
+| Incident investigation | Completed |
+| Incident resolution | Completed |
+| Scheduled-task removal | Confirmed |
+| Custom detection disabled | Confirmed |
+| Updated process entity mapping retested | Not performed |
+| Final endpoint health recheck | Not documented |
+
+The exercise demonstrated successful telemetry collection, detection execution, alert generation, and incident investigation.
+
+The final validation reflects only the activities actually observed during the lab.
+
+### Lessons Learned
+
+#### 1. Telemetry and Detection Are Different
+
+Microsoft Defender collected endpoint process and network events before a custom detection rule was created.
+
+The existence of telemetry did not automatically mean an alert had been generated.
+
+The custom detection rule provided the logic necessary to convert a specific observed behavior into an alert.
+
+#### 2. Process Ancestry Is Essential Investigative Context
+
+The scheduled-task simulation produced a process relationship involving:
+
+```text
+services.exe
+    └── svchost.exe
+         └── powershell.exe
+```
+
+This relationship helped narrow the investigation toward Windows service-initiated execution.
+
+However, legitimate scheduled tasks can produce similar activity.
+
+Parent-child relationships should be evaluated alongside command-line arguments, timing, and authorization.
+
+#### 3. Successful Detection Requires Validation
+
+The custom rule generated a real Low-severity alert associated with Incident #782.
+
+This provided stronger evidence than a successful Advanced Hunting query alone.
+
+A query match demonstrates that telemetry satisfies the hunting conditions; an alert confirms that the detection mechanism executed and produced a security finding.
+
+#### 4. Entity Mapping Affects Investigative Quality
+
+The original alert contained limited process evidence details.
+
+The rule was subsequently updated to use the combined ProcessId and CommandLine identifier.
+
+This improved the specificity of the configured process mapping, but the change was not independently retested with a new alert.
+
+Further validation would be necessary to determine whether the revised mapping improved evidence enrichment.
+
+#### 5. Context Prevents Incorrect Incident Classification
+
+The observed PowerShell execution was consistent with the authorized scheduled-task simulation.
+
+The command line, execution time, parent process, and known lab artifact supported the expected-activity conclusion.
+
+The incident was resolved as:
+
+**Informational, expected activity — Security testing**
+
+This demonstrated the importance of distinguishing suspicious-looking behavior from confirmed malicious activity.
+
+#### 6. Network Telemetry Provides Additional Visibility
+
+The outbound HTTPS simulation generated a successful connection event in `DeviceNetworkEvents`.
+
+Defender identified the initiating PowerShell process, destination domain, remote IP address, and TCP port.
+
+This illustrated how endpoint process telemetry and network telemetry can be correlated during an investigation.
+
+#### 7. Lab Detections Require Careful Production Adaptation
+
+The custom detection was intentionally scoped to a single endpoint and known test artifact.
+
+A production deployment would require:
+
+- Broader behavioral detection logic.
+- Baseline analysis of legitimate scheduled-task activity.
+- False-positive testing.
+- Appropriate alert severity and entity mapping.
+- Performance and scheduling considerations.
+- Additional validation before enabling automated remediation.
+
+The Lab 6 rule should not be deployed unchanged as a production detection.
+
+### Limitations
+
+Several limitations should be considered when interpreting the results:
+
+- The exercise used benign commands rather than actual malware.
+- The scheduled task executed once and did not establish recurring persistence.
+- No unauthorized access, credential theft, exfiltration, or command-and-control activity occurred.
+- The custom detection matched a known lab artifact.
+- The revised entity mapping was saved but not retested.
+- The remaining local files were not deleted at the final verification checkpoint.
+- No final endpoint health recheck was documented.
+- Hunting queries using relative time filters such as `ago(24h)` may no longer return the original events after the lookback window expires.
+
+### Future Improvements
+
+Future iterations of Operation False Foothold could include:
+
+1. Retesting the revised process entity mapping to evaluate evidence enrichment.
+2. Developing a broader behavioral detection that does not rely on the `TaskExecution.txt` filename.
+3. Comparing benign administrative scheduled tasks with suspicious execution patterns.
+4. Correlating Windows Task Scheduler operational logs with Defender process telemetry.
+5. Evaluating alert frequency, false positives, and entity enrichment across multiple test executions.
+6. Building a unified KQL hunting timeline combining process and network activity.
+7. Replacing evidence placeholders with redacted screenshots of the observed lab results.
+
+### Final Conclusion
+
+Operation False Foothold demonstrated a complete, controlled endpoint detection-and-response workflow.
+
+The exercise progressed through endpoint validation, initial PowerShell execution, system discovery, scheduled-task execution, outbound HTTPS communication, custom detection engineering, incident investigation, and cleanup.
+
+Microsoft Defender XDR successfully recorded the simulated endpoint behaviors, and the custom detection rule generated a Low-severity alert associated with Incident #782.
+
+The investigation established that the activity was authorized and benign, allowing the incident to be resolved as expected security-testing activity.
+
+The primary outcome was not the execution of an attack, but the ability to **generate observable behavior, investigate the resulting telemetry, develop detection logic, validate an alert, and document an evidence-based incident disposition**.
+
+---
+
+*Operation False Foothold — Lab 6 Complete*
+
+*Azure Trenches | Endpoint Security | Microsoft Defender XDR*
