@@ -416,7 +416,8 @@ The task was subsequently unregistered following evidence collection.
 
 ### Evidence
 
-*Screenshot pending — Scheduled-task registration, successful execution results, and Defender XDR process tree showing `svchost.exe` → `powershell.exe`.*
+
+![Stage 4 - Scheduled task PowerShell execution captured in Defender XDR](Screenshots/05-scheduled-task-execution.PNG)
 
 ---
 
