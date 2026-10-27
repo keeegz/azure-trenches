@@ -173,7 +173,7 @@ This technique mapping describes the observed execution mechanism; it does not i
 
 ### Evidence
 
-*Screenshot pending — PowerShell script execution and Defender XDR Advanced Hunting results.*
+![Stage 2 - Initial PowerShell execution captured in Defender XDR](Screenshots/03-initial-powershell-execution.PNG)
 
 ---
 
