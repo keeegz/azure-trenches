@@ -171,3 +171,105 @@ This technique mapping describes the observed execution mechanism; it does not i
 ### Evidence
 
 *Screenshot pending — PowerShell script execution and Defender XDR Advanced Hunting results.*
+
+---
+
+## Stage 3 — System Discovery
+
+### Objective
+
+Simulate local host, user, and network discovery on the Windows 11 endpoint and investigate whether Microsoft Defender XDR records the executed commands and their parent-child process relationships.
+
+These commands are legitimate Windows administration utilities but can also be used by adversaries during post-compromise reconnaissance.
+
+### Execution Procedure
+
+The following commands were executed from PowerShell on `nyc-cl11`:
+
+```powershell
+whoami /all
+systeminfo
+ipconfig /all
+net user
+```
+
+Each command gathered a different category of information:
+
+| Command | Purpose |
+|---|---|
+| `whoami /all` | Enumerate the current user's identity, groups, and privileges |
+| `systeminfo` | Retrieve operating system and host configuration details |
+| `ipconfig /all` | Enumerate local network adapter and IP configuration |
+| `net user` | Enumerate local user accounts |
+
+### KQL — Discovery Activity Investigation
+
+Microsoft Defender XDR Advanced Hunting was used to identify the discovery commands:
+
+```kql
+DeviceProcessEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where FileName in~ (
+    "whoami.exe",
+    "systeminfo.exe",
+    "ipconfig.exe",
+    "net.exe",
+    "net1.exe"
+)
+| project
+    Timestamp,
+    DeviceName,
+    AccountName,
+    FileName,
+    ProcessCommandLine,
+    InitiatingProcessFileName,
+    ProcessId,
+    InitiatingProcessId
+| order by Timestamp asc
+```
+
+### Results
+
+Microsoft Defender successfully captured the discovery activity in `DeviceProcessEvents`.
+
+| Observed process | Parent process | Finding |
+|---|---|---|
+| `whoami.exe` | `powershell.exe` | User and privilege enumeration |
+| `systeminfo.exe` | `powershell.exe` | Host configuration discovery |
+| `ipconfig.exe` | `powershell.exe` | Network configuration discovery |
+| `net.exe` | `powershell.exe` | Local account enumeration |
+| `net1.exe` | `net.exe` | Additional child process associated with `net user` |
+
+The discovery commands were executed within a short period, allowing the analyst to correlate the activity as a related sequence.
+
+Of particular interest, Defender captured `net1.exe` as a child of `net.exe`. This illustrates why parent-child process relationships can provide valuable investigative context beyond individual command-line events.
+
+### MITRE ATT&CK Mapping
+
+| Technique | ID | Simulated behavior |
+|---|---|---|
+| System Owner/User Discovery | T1033 | `whoami /all` |
+| System Information Discovery | T1082 | `systeminfo` |
+| System Network Configuration Discovery | T1016 | `ipconfig /all` |
+| Account Discovery: Local Account | T1087.001 | `net user` |
+
+These mappings describe the observed discovery techniques, not confirmed malicious activity.
+
+### Analyst Findings
+
+The presence of discovery commands alone is insufficient to establish compromise.
+
+An analyst should evaluate:
+
+- The account executing the commands.
+- The parent process and execution context.
+- The frequency and sequence of discovery activity.
+- Whether the commands correlate with other suspicious events.
+- Whether the activity was authorized.
+
+In this lab, the commands were explicitly executed as part of a controlled security simulation.
+
+### Evidence
+
+*Screenshot pending — Defender XDR Advanced Hunting results showing discovery commands and the `net.exe` → `net1.exe` process relationship.*
