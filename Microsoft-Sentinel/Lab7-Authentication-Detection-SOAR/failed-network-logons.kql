@@ -1,0 +1,23 @@
+let DetectionWindow = 1h;
+let FailureThreshold = 2;
+SecurityEvent
+| where TimeGenerated >= ago(DetectionWindow)
+| where EventID == 4625
+| where LogonType == 3
+| where Account contains "SOAR-Test"
+| where isnotempty(IpAddress)
+| summarize
+    FailedAttempts = count(),
+    FirstSeen = min(TimeGenerated),
+    LastSeen = max(TimeGenerated)
+    by Computer, Account, IpAddress
+| where FailedAttempts >= FailureThreshold
+| project
+    TimeGenerated = LastSeen,
+    Computer,
+    Account,
+    IpAddress,
+    FailedAttempts,
+    FirstSeen,
+    LastSeen
+| order by FailedAttempts desc
