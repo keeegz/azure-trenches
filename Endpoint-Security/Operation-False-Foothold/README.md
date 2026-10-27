@@ -543,7 +543,8 @@ In this case, the destination was a legitimate test domain, the request was auth
 
 ### Evidence
 
-*Screenshot pending — PowerShell HTTP response and Defender XDR Advanced Hunting results showing the successful outbound connection to `example.com`.*
+
+![Stage 5 - Outbound HTTPS communication captured in Defender XDR](Screenshots/06-outbound-https-telemetry.PNG)
 
 ---
 
