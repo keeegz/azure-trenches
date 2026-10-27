@@ -674,7 +674,8 @@ The rule configuration selected the Scheduled Task/Job technique, while the more
 
 ### Evidence
 
-*Screenshot pending — Custom detection configuration, KQL query validation, process entity mapping, and successfully generated Defender XDR alert.*
+
+![Stage 6 - Microsoft Defender XDR custom detection rule configuration](Screenshots/07-custom-detection-rule.PNG)
 
 ---
 
