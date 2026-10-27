@@ -204,3 +204,33 @@ This lab implemented Microsoft Sentinel automation-rule-based incident enrichmen
 No Azure Logic Apps playbook, automated account disablement, endpoint isolation, or other containment action was deployed.
 
 The successful execution demonstrates automated incident tagging, not automated threat remediation.
+
+## Evidence & Validation
+
+The following screenshots document the successful execution of the detection and incident-enrichment workflow.
+
+### 1. KQL Detection Results
+
+The custom KQL query identified two failed network authentication attempts against the controlled `SOAR-Test` account.
+
+The screenshot uses an expanded three-hour investigation window to retrieve the historical test events; the deployed analytics rule uses a one-hour lookup period.
+
+![KQL Detection Results](Screenshots/Lab7_KQL_Detection_Results.PNG)
+
+### 2. Microsoft Sentinel Analytics Rule
+
+The scheduled analytics rule was deployed and enabled with Medium severity and MITRE ATT&CK technique T1110.
+
+![Sentinel Analytics Rule](Screenshots/Lab7_Sentinel_Analytics_Rule.PNG)
+
+### 3. Microsoft Defender Incident Validation
+
+Incident 1011 demonstrates successful alert generation, incident creation, and entity mapping for the account, endpoint, and source IP.
+
+![Defender Incident Validation](Screenshots/Lab7_Defender_Incident_Validation.PNG)
+
+### 4. SOAR Automation Execution
+
+The incident activity log confirms that the Lab 7 automation rule successfully applied the `LAB7-SOAR` tag with a Completed execution status.
+
+![SOAR Automation Execution](Screenshots/Lab7_SOAR_Automation_Execution.PNG)
