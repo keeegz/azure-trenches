@@ -222,19 +222,19 @@ The following screenshots document the implemented workflow and representative r
 
 ### Workflow Architecture
 
-![CERBERUS Logic App Architecture](screenshots/01-CERBERUS-Workflow-Architecture.png)
+![CERBERUS Logic App Architecture](screenshots/01-CERBERUS-Workflow-Architecture.PNG)
 
 *Figure 1 — Microsoft Sentinel incident ingestion, metadata extraction, and five severity-routing paths.*
 
 ### High Severity Triage
 
-![CERBERUS High Severity Validation](screenshots/02-CERBERUS-High-Severity-Validation.png)
+![CERBERUS High Severity Validation](screenshots/02-CERBERUS-High-Severity-Validation.PNG)
 
 *Figure 2 — Successful High Severity execution demonstrating P1 review classification, populated incident metadata, and analyst approval metadata.*
 
 ### Default Fallback Validation
 
-![CERBERUS Default Fallback Validation](screenshots/03-CERBERUS-Default-Fallback-Validation.png)
+![CERBERUS Default Fallback Validation](screenshots/03-CERBERUS-Default-Fallback-Validation.PNG)
 
 *Figure 3 — Controlled unmatched-value test demonstrating UNCLASSIFIED routing, manual-review priority, and triage-only operation.*
 
