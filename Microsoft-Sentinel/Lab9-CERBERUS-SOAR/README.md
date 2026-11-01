@@ -398,3 +398,100 @@ The validated workflow successfully retrieved **2,404 endpoint process events**,
 The results demonstrate automated evidence collection and consolidation rather than confirmed malicious activity. Automated process-to-network correlation, threat intelligence enrichment, and analyst-approved containment remain planned enhancements.
 
 
+## Phase 2.5 — Operation Nightfall: Automated Process-to-Network Correlation
+
+### Objective
+
+Extend CERBERUS beyond independent endpoint and network investigations by correlating process execution with outbound network activity in Microsoft Defender XDR. Validate the workflow using a controlled, benign PowerShell simulation and incorporate the resulting evidence into the consolidated SOC investigation report.
+
+### Scope
+
+- Generate controlled PowerShell execution and HTTPS connection telemetry on the onboarded Windows 11 endpoint `nyc-cl11`.
+- Correlate `DeviceProcessEvents` and `DeviceNetworkEvents` using device identity, process ID, and process creation time.
+- Execute the correlation query automatically through the CERBERUS Logic App.
+- Include correlated evidence in the `ProcessNetworkCorrelation` section of the consolidated JSON report.
+- Validate the results using a known-good Microsoft Sentinel incident payload.
+
+**Safety boundary:** The simulation used the benign example domain `example.com`. A successful outbound connection or PowerShell execution alone does not establish malicious activity. No automated endpoint containment was performed.
+
+
+
+### Controlled PowerShell Simulation
+
+A benign PowerShell simulation was executed interactively on the onboarded Windows 11 endpoint `nyc-cl11` to generate observable endpoint process and network telemetry.
+
+The following commands were executed:
+
+```powershell
+Invoke-WebRequest -Uri "https://example.com/" -UseBasicParsing -TimeoutSec 15 | Select-Object StatusCode
+
+$NightfallMarker = "CERBERUS-NIGHTFALL-TEST-001"
+Write-Output $NightfallMarker
+Invoke-WebRequest -Uri "https://example.com/?lab=CERBERUS-NIGHTFALL-TEST-001" -UseBasicParsing -TimeoutSec 15 | Select-Object StatusCode
+```
+
+Both HTTPS requests returned HTTP `200`, confirming successful connectivity to the benign test destination.
+
+Microsoft Defender XDR telemetry subsequently identified:
+
+- **Device:** `nyc-cl11`
+- **Process:** `powershell.exe`
+- **Process ID:** `2568`
+- **Account:** `azureuser`
+- **Remote destination:** `example.com`
+- **Remote IP:** `172.66.147.243`
+- **Remote port:** `443`
+- **Network action:** `ConnectionSuccess`
+
+The simulation marker was entered within an interactive PowerShell session and should not be interpreted as a marker observed in Defender process command-line telemetry. The observed process command line was `powershell.exe`.
+
+This activity was intentionally benign and was used to validate telemetry collection and correlation rather than malware detection.
+
+
+### KQL Process-to-Network Correlation
+
+The following KQL query was validated in Microsoft Defender XDR Advanced Hunting. It correlates outbound PowerShell network events with process creation records using device identity, process ID, and process creation time.
+
+```kql
+DeviceNetworkEvents
+| where Timestamp > ago(24h)
+| where DeviceName =~ "nyc-cl11"
+| where InitiatingProcessFileName =~ "powershell.exe"
+| join kind=inner (
+    DeviceProcessEvents
+    | where Timestamp > ago(24h)
+    | where DeviceName =~ "nyc-cl11"
+    | where FileName =~ "powershell.exe"
+    | project DeviceId, ProcessId, ProcessCreationTime, ProcessCommandLine, AccountName
+)
+on DeviceId,
+   $left.InitiatingProcessId == $right.ProcessId,
+   $left.InitiatingProcessCreationTime == $right.ProcessCreationTime
+| project NetworkTimestamp = Timestamp, DeviceName, InitiatingProcessId,
+          ProcessCommandLine, AccountName, RemoteUrl, RemoteIP, RemotePort, ActionType
+| order by NetworkTimestamp desc
+```
+
+**Correlation methodology:** Matching the device and process ID alone can produce incorrect associations when process IDs are reused. Including process creation time strengthens the relationship between the initiating process and its network activity.
+
+The production Logic App action uses a seven-day lookback, a dynamically extracted Defender `DeviceId` from the Sentinel incident context, and a maximum of 50 returned records. The query is used for evidence enrichment, not automatic malicious-activity classification.
+
+
+### CERBERUS Logic App Integration
+
+The validated KQL correlation was integrated into the existing `la-cerberus-soc-triage` workflow through a Microsoft Defender Advanced Hunting connector action named `CERBERUS - Correlate Process and Network Activity`.
+
+The action was positioned after `CERBERUS - Network Investigation Summary` and before `CERBERUS - Build Investigation Report`.
+
+**Implementation details:**
+
+- Replaced the fixed device-name filter with a dynamically extracted Defender `DeviceId` from the Sentinel incident context.
+- Extended the hunting lookback window to seven days for controlled historical validation.
+- Limited the query output to 50 records.
+- Used an inner join on `DeviceId`, process ID, and process creation time.
+- Added the action's `Results` output to the consolidated investigation report under `ProcessNetworkCorrelation`.
+- Preserved the existing incident metadata, endpoint telemetry, process investigation, behavioral analysis, network investigation, and analyst assessment sections.
+
+**Validation:** A previously successful Sentinel incident payload was resubmitted to the updated Logic App. The correlation action returned four matching process/network records, and the consolidated investigation report successfully included the Nightfall PowerShell connection to `example.com:443`.
+
+The four records represent correlated activity, not four confirmed threats. The workflow did not perform automated containment or enforce an analyst approval gate.
