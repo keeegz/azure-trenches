@@ -495,3 +495,24 @@ The action was positioned after `CERBERUS - Network Investigation Summary` and b
 **Validation:** A previously successful Sentinel incident payload was resubmitted to the updated Logic App. The correlation action returned four matching process/network records, and the consolidated investigation report successfully included the Nightfall PowerShell connection to `example.com:443`.
 
 The four records represent correlated activity, not four confirmed threats. The workflow did not perform automated containment or enforce an analyst approval gate.
+
+
+### Operation Nightfall — Validation Evidence
+
+#### Figure 10 — KQL Process-to-Network Correlation
+
+![Figure 10 — Defender XDR process-to-network correlation](screenshots/07-CERBERUS-Nightfall-Process-Network-Correlation.PNG)
+
+*Figure 10 — Microsoft Defender XDR Advanced Hunting correlation of PowerShell process execution and outbound network activity using device identity, process ID, and process creation time.*
+
+#### Figure 11 — Automated Correlation Results
+
+![Figure 11 — CERBERUS automated correlation results](screenshots/08B-CERBERUS-Nightfall-Correlated-Evidence.PNG)
+
+*Figure 11 — Successful CERBERUS Logic App correlation action returning Nightfall PowerShell network evidence, including the connection to `example.com:443`.*
+
+#### Figure 12 — Consolidated Investigation Report
+
+![Figure 12 — CERBERUS consolidated correlation report](screenshots/09-CERBERUS-Nightfall-Consolidated-Report.PNG)
+
+*Figure 12 — Validated Logic App execution showing the `ProcessNetworkCorrelation` section populated within the consolidated investigation report.*
