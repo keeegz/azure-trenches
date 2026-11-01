@@ -349,4 +349,52 @@ The following screenshots document the implemented workflow and representative r
 
 *Figure 3 — Controlled unmatched-value test demonstrating UNCLASSIFIED routing, manual-review priority, and triage-only operation.*
 
+---
+
+## Phase 2 — Defender XDR Investigation Evidence
+
+The following screenshots document the successful execution of CERBERUS's endpoint and network investigation pipeline against controlled Sentinel incident **1327**, associated with endpoint `nyc-cl11`.
+
+### Figure 4 — Network Investigation Workflow
+
+![CERBERUS Network Investigation Workflow](screenshots/01-CERBERUS-Network-Investigation-Workflow.PNG)
+
+*Figure 4 — Successful Azure Logic Apps execution showing behavioral analysis, Defender XDR network investigation, network evidence extraction, and consolidated investigation reporting.*
+
+### Figure 5 — Defender XDR Network Telemetry
+
+![CERBERUS Defender Network Telemetry](screenshots/02-CERBERUS-Defender-Network-Telemetry.PNG)
+
+*Figure 5 — Microsoft Defender XDR Advanced Hunting results showing an outbound HTTPS connection initiated by `svchost.exe`, including process attribution, destination IP address, port, and URL.*
+
+### Figure 6 — Network Investigation Summary
+
+![CERBERUS Network Investigation Summary](screenshots/03-CERBERUS-Network-Investigation-Summary.PNG)
+
+*Figure 6 — Azure Logic Apps Compose action successfully extracting structured `DeviceNetworkEvents` results for downstream investigation reporting.*
+
+### Figure 7 — Consolidated Investigation Report
+
+![CERBERUS Consolidated Report Overview](screenshots/04-CERBERUS-Consolidated-Report-Overview.PNG)
+
+*Figure 7 — Consolidated CERBERUS SOC Investigation report containing incident metadata and structured investigation evidence.*
+
+### Figure 8 — Network Evidence Integration
+
+![CERBERUS Consolidated Network Evidence](screenshots/05-CERBERUS-Consolidated-Network-Evidence.PNG)
+
+*Figure 8 — `NetworkInvestigation` array successfully incorporated into the consolidated JSON report, demonstrating the transfer of Defender network telemetry through the investigation pipeline.*
+
+### Figure 9 — Analyst Assessment
+
+![CERBERUS Analyst Assessment](screenshots/06-CERBERUS-Analyst-Assessment.PNG)
+
+*Figure 9 — Final investigation assessment retaining the disposition `Pending analyst review` and recommending evidence review before containment. No automated containment or enforced approval gate is implemented at this stage.*
+
+### Phase 2 Evidence Summary
+
+The validated workflow successfully retrieved **2,404 endpoint process events**, **20 suspicious-process investigation records**, **13 behavioral summary records**, and **50 network events**.
+
+The results demonstrate automated evidence collection and consolidation rather than confirmed malicious activity. Automated process-to-network correlation, threat intelligence enrichment, and analyst-approved containment remain planned enhancements.
+
 
