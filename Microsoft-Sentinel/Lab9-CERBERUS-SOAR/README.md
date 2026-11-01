@@ -3,7 +3,7 @@
 
 **Platform:** Microsoft Sentinel | Azure Logic Apps | Microsoft Defender XDR  
 **Project Type:** Security Orchestration, Automation & Response (SOAR)  
-**Status:** Phase 1 — Implemented and Validated
+**Status:** Phases 1–2 — Implemented and Validated | Phase 2.5 — Planned
 
 ## Project Overview
 
@@ -117,6 +117,93 @@ The following output was captured during the successful High Severity validation
 
 The output provides a consistent triage record that can support future enrichment, reporting, and analyst-driven response workflows.
 
+## Phase 2 — Defender XDR Endpoint & Network Investigation
+
+### Objective
+
+Extend CERBERUS beyond severity-based triage by collecting endpoint telemetry from Microsoft Defender XDR and consolidating investigation evidence into a structured SOC report.
+
+### Investigation Workflow
+
+Following Sentinel incident ingestion and metadata extraction, CERBERUS performs the following actions:
+
+1. **Device Identification:** Extracts the affected endpoint's Defender Device ID from the incident's Host entities.
+2. **Endpoint Telemetry Collection:** Queries `DeviceProcessEvents` for process execution activity associated with the identified device.
+3. **Suspicious Process Hunting:** Investigates potentially suspicious process execution, including living-off-the-land binaries (LOLBins).
+4. **Behavioral Analysis:** Aggregates process activity to provide additional investigative context.
+5. **Network Investigation:** Queries `DeviceNetworkEvents` to retrieve network activity, initiating processes, destination IP addresses, ports, URLs, and connection outcomes.
+6. **Evidence Consolidation:** Uses Azure Logic Apps Compose actions to extract query results and assemble a structured JSON investigation report.
+
+### Advanced Hunting — Network Investigation
+
+CERBERUS uses Microsoft Defender XDR Advanced Hunting to retrieve recent network activity for the incident-associated endpoint.
+
+```kql
+DeviceNetworkEvents
+| where Timestamp > ago(7d)
+| where DeviceId == "<DefenderDeviceId>"
+| project
+    Timestamp,
+    DeviceName,
+    DeviceId,
+    ActionType,
+    InitiatingProcessFileName,
+    InitiatingProcessId,
+    InitiatingProcessCreationTime,
+    InitiatingProcessCommandLine,
+    RemoteIP,
+    RemotePort,
+    RemoteUrl,
+    LocalIP,
+    LocalPort
+| order by Timestamp desc
+| take 50
+```
+
+The Device ID placeholder represents the value dynamically extracted from the Sentinel incident during workflow execution.
+
+### Consolidated Investigation Report
+
+CERBERUS generates a structured JSON report containing:
+
+- `IncidentMetadata` — Incident title, severity, status, number, and creation timestamp.
+- `EndpointTelemetry` — Retrieved endpoint process execution records.
+- `ProcessInvestigation` — Results from suspicious process hunting.
+- `BehavioralAnalysis` — Aggregated process behavior.
+- `NetworkInvestigation` — Retrieved network events and process-attributed connection details.
+- `AnalystAssessment` — Investigation disposition and recommended next action.
+
+The report currently uses the disposition `Pending analyst review` and recommends reviewing collected evidence before containment.
+
+### Phase 2 Validation
+
+CERBERUS was manually executed against controlled Sentinel incident **1327**, associated with endpoint `nyc-cl11`.
+
+The successful execution produced:
+
+| Investigation Component | Validated Result |
+|---|---|
+| Endpoint telemetry | 2,404 process events |
+| Suspicious process investigation | 20 records |
+| Behavioral analysis | 13 summary records |
+| Network investigation | 50 network events |
+| Consolidated report | Successfully generated |
+| Analyst assessment | Pending analyst review |
+
+The network investigation returned process-associated connections, including `svchost.exe` communicating with `v20.events.data.microsoft.com` over HTTPS (TCP port 443).
+
+This represents observed endpoint network telemetry, not confirmed malicious communication.
+
+### Limitations and Security Considerations
+
+- The playbook remains manually invoked; automatic Sentinel execution is disabled.
+- CERBERUS does not currently perform endpoint isolation or automated remediation.
+- Process and network evidence are collected, but automated cross-dataset process-to-network correlation has not yet been implemented.
+- The current analyst assessment is a static recommendation, not an enforced approval gate.
+- The network query retrieves the latest 50 matching events within seven days, not every event in that period.
+- Evidence intended for public documentation must be reviewed for credentials, secrets, and sensitive environment identifiers.
+
+**Phase 2 Outcome:** Successfully implemented and validated automated Defender XDR endpoint and network evidence collection with consolidated SOC investigation reporting.
 
 ## Testing & Validation
 
@@ -179,39 +266,66 @@ Following correction, all severity branches were validated successfully.
 **Key Takeaway:** Reliable security orchestration depends on understanding connector payload structures, validating workflow expressions, and testing automation against representative incident data.
 
 
-## Future Enhancements & Development Roadmap
+## CERBERUS Development Roadmap
 
-CERBERUS is designed as an extensible security orchestration framework. The initial implementation establishes severity-based incident triage, while future phases will introduce deeper investigation and enrichment capabilities.
+CERBERUS is being developed incrementally, with each phase introducing additional investigation capabilities while maintaining analyst oversight.
 
-### Phase 2 — Defender XDR Endpoint Investigation
+### Phase 1 — Sentinel Incident Triage (Completed)
 
-Extend CERBERUS to retrieve and analyze endpoint telemetry associated with Microsoft Sentinel incidents.
+Implemented and validated severity-based incident classification, investigation priority assignment, structured triage output, and fallback handling.
 
-Planned capabilities include:
+All five severity-routing paths passed controlled testing.
 
-- Retrieve incident-associated alerts and affected device information.
-- Query Microsoft Defender XDR Advanced Hunting for relevant endpoint activity.
-- Examine process execution, parent-child relationships, and command-line evidence.
-- Correlate device network connections with suspicious process activity.
-- Produce structured investigation findings for analyst review.
+### Phase 2 — Defender XDR Endpoint & Network Investigation (Completed)
 
-### Phase 3 — Threat Intelligence Enrichment
+Implemented and validated:
 
-Introduce automated enrichment of incident-related indicators of compromise (IOCs).
+- Extraction of incident-associated endpoint identifiers.
+- Microsoft Defender XDR Advanced Hunting queries against `DeviceProcessEvents` and `DeviceNetworkEvents`.
+- Suspicious process hunting and aggregated behavioral analysis.
+- Collection of process-attributed network connection evidence.
+- Consolidation of incident, endpoint, process, behavioral, and network telemetry into a structured JSON report.
+- Analyst assessment recommending evidence review before containment.
 
-Planned capabilities include:
+Phase 2 was validated against controlled Sentinel incident 1327 and endpoint `nyc-cl11`.
 
-- Extract IP addresses, domains, URLs, and file hashes from incident evidence.
-- Query available threat intelligence sources for indicator context.
-- Correlate intelligence findings with endpoint and incident telemetry.
-- Record indicator matches, source attribution, and confidence limitations.
-- Incorporate enrichment results into the triage output.
+### Phase 2.5 — Operation Nightfall: Controlled Threat Simulation (Planned)
 
-### Phase 4 — Consolidated Investigation Reporting
+Conduct a safe, controlled adversary-emulation exercise against the designated lab endpoint.
 
-Combine severity classification, endpoint evidence, and threat intelligence into a unified investigation summary.
+Planned capabilities:
 
-The objective is to provide analysts with actionable context, supporting evidence, and recommended next steps while retaining human oversight of security response decisions.
+- Generate recognizable suspicious process activity using a harmless test payload.
+- Produce outbound network telemetry involving a controlled, non-Microsoft destination.
+- Correlate process execution and network connections using device identity, process identifiers, and timestamps.
+- Investigate the activity through CERBERUS and document the resulting evidence.
+- Distinguish simulated suspicious behavior from confirmed malicious activity.
+
+### Phase 3 — Threat Intelligence Enrichment (Planned)
+
+Extend CERBERUS to enrich indicators extracted from endpoint and network investigations.
+
+Planned capabilities:
+
+- Extract IP addresses, domains, URLs, and file hashes.
+- Query supported threat intelligence and reputation sources.
+- Record indicator matches, source attribution, timestamps, and confidence limitations.
+- Incorporate enrichment findings into the consolidated investigation report.
+- Support evidence-based analyst decisions without treating unknown indicators as automatically malicious.
+
+### Phase 4 — Analyst-Approved Endpoint Containment (Planned)
+
+Introduce controlled incident-response actions with explicit analyst authorization.
+
+Planned capabilities:
+
+- Present investigation findings and recommended response actions.
+- Require an enforced human approval step before containment.
+- Integrate supported Microsoft Defender XDR endpoint isolation actions.
+- Record approval decisions, execution results, and investigation outcomes.
+- Validate containment safely within the authorized lab environment.
+
+**Current Project Status:** Phases 1 and 2 implemented and validated. Phases 2.5, 3, and 4 remain planned.
 
 **Current Project Status:** Phase 1 implemented and validated. Phases 2–4 are planned enhancements and have not yet been implemented.
 
