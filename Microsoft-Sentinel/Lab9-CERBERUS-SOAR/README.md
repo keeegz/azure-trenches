@@ -327,9 +327,6 @@ Planned capabilities:
 
 **Current Project Status:** Phases 1 and 2 implemented and validated. Phases 2.5, 3, and 4 remain planned.
 
-**Current Project Status:** Phase 1 implemented and validated. Phases 2–4 are planned enhancements and have not yet been implemented.
-
-
 ## Validation Evidence
 
 The following screenshots document the implemented workflow and representative results from controlled validation.
