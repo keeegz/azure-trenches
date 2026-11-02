@@ -3,7 +3,7 @@
 
 **Platform:** Microsoft Sentinel | Azure Logic Apps | Microsoft Defender XDR  
 **Project Type:** Security Orchestration, Automation & Response (SOAR)  
-**Status:** Phases 1–2 — Implemented and Validated | Phase 2.5 — Planned
+**Status:** Phases 1–2.5 — Implemented and Validated | Phase 3 — Planned
 
 ## Project Overview
 
@@ -289,11 +289,10 @@ Implemented and validated:
 
 Phase 2 was validated against controlled Sentinel incident 1327 and endpoint `nyc-cl11`.
 
-### Phase 2.5 — Operation Nightfall: Controlled Threat Simulation (Planned)
-
+### Phase 2.5 — Operation Nightfall: Controlled Threat Simulation & Automated Correlation (Completed)
 Conduct a safe, controlled adversary-emulation exercise against the designated lab endpoint.
 
-Planned capabilities:
+**Implemented and validated capabilities:**
 
 - Generate recognizable suspicious process activity using a harmless test payload.
 - Produce outbound network telemetry involving a controlled, non-Microsoft destination.
@@ -325,7 +324,7 @@ Planned capabilities:
 - Record approval decisions, execution results, and investigation outcomes.
 - Validate containment safely within the authorized lab environment.
 
-**Current Project Status:** Phases 1 and 2 implemented and validated. Phases 2.5, 3, and 4 remain planned.
+**Current Project Status:** Phases 1, 2, and 2.5 implemented and validated. Phases 3 and 4 remain planned.
 
 ## Validation Evidence
 
@@ -516,3 +515,20 @@ The four records represent correlated activity, not four confirmed threats. The 
 ![Figure 12 — CERBERUS consolidated correlation report](screenshots/09-CERBERUS-Nightfall-Consolidated-Report.PNG)
 
 *Figure 12 — Validated Logic App execution showing the `ProcessNetworkCorrelation` section populated within the consolidated investigation report.*
+
+
+### Phase 2.5 — Validation Summary
+
+Operation Nightfall successfully demonstrated automated process-to-network evidence correlation using Microsoft Defender XDR Advanced Hunting and Azure Logic Apps.
+
+**Validated outcomes:**
+- Executed a controlled, benign PowerShell network simulation.
+- Correlated endpoint process and network telemetry using device identity, process ID, and process creation time.
+- Successfully executed the updated CERBERUS Logic App using a previously validated Sentinel incident payload.
+- Retrieved four correlated process/network records, including the Nightfall test activity.
+- Added the correlation results to the consolidated investigation report under `ProcessNetworkCorrelation`.
+
+**Current limitations:** Correlated activity was not automatically classified as malicious. Threat intelligence enrichment, enforced analyst approval, and endpoint containment were not implemented or validated in this phase.
+
+**Next phase:** Phase 3 — Threat Intelligence Enrichment.
+
