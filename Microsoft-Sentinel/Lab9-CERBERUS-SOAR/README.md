@@ -3,7 +3,7 @@
 
 **Platform:** Microsoft Sentinel | Azure Logic Apps | Microsoft Defender XDR  
 **Project Type:** Security Orchestration, Automation & Response (SOAR)  
-**Status:** Phases 1–2.5 — Implemented and Validated | Phase 3 — Planned
+**Status:** Phases 1–3 — Implemented and Validated | Phase 4 — Planned
 
 ## Project Overview
 
@@ -15,7 +15,7 @@ The initial implementation supports four severity classifications—High, Medium
 
 CERBERUS currently operates in a triage-only configuration, preserving human oversight and preventing automated containment or remediation.
 
-The project is designed for incremental expansion into Defender XDR endpoint investigation, threat intelligence enrichment, and evidence-driven incident response.
+The project has expanded to include Defender XDR endpoint investigation, process-to-network correlation, behavioral risk scoring, automated incident-update execution, and VirusTotal IP reputation enrichment. Analyst-approved containment remains a future enhancement.
 
 
 ## Architecture & Workflow Design
@@ -44,7 +44,7 @@ The Default branch provides a fallback for unmatched severity values, directing 
 
 ### Execution Model
 
-The playbook is executed manually from Microsoft Defender's incident interface during development and validation. Its Sentinel automation rule remains disabled.
+Early phases were executed manually during development. On November 4, 2026, a controlled incident-update automation rule successfully invoked the playbook for incident 2471. This was a time-limited lab validation, not a claim of production deployment.
 
 CERBERUS generates triage recommendations without modifying incidents, isolating endpoints, or executing remediation actions. Analyst approval flags are informational and do not currently constitute an enforced approval workflow.
 
@@ -196,9 +196,9 @@ This represents observed endpoint network telemetry, not confirmed malicious com
 
 ### Limitations and Security Considerations
 
-- The playbook remains manually invoked; automatic Sentinel execution is disabled.
+- Earlier Phase 2 tests used manual invocation; later Phase 3 testing validated automatic execution on a controlled Sentinel incident update.
 - CERBERUS does not currently perform endpoint isolation or automated remediation.
-- Process and network evidence are collected, but automated cross-dataset process-to-network correlation has not yet been implemented.
+- This Phase 2 limitation was subsequently addressed by the process-to-network correlation validated in Phase 2.5.
 - The current analyst assessment is a static recommendation, not an enforced approval gate.
 - The network query retrieves the latest 50 matching events within seven days, not every event in that period.
 - Evidence intended for public documentation must be reviewed for credentials, secrets, and sensitive environment identifiers.
@@ -300,17 +300,9 @@ Conduct a safe, controlled adversary-emulation exercise against the designated l
 - Investigate the activity through CERBERUS and document the resulting evidence.
 - Distinguish simulated suspicious behavior from confirmed malicious activity.
 
-### Phase 3 — Threat Intelligence Enrichment (Planned)
+### Phase 3 — Behavioral Risk Scoring, Automated Triage & VirusTotal IP Enrichment (Completed)
 
-Extend CERBERUS to enrich indicators extracted from endpoint and network investigations.
-
-Planned capabilities:
-
-- Extract IP addresses, domains, URLs, and file hashes.
-- Query supported threat intelligence and reputation sources.
-- Record indicator matches, source attribution, timestamps, and confidence limitations.
-- Incorporate enrichment findings into the consolidated investigation report.
-- Support evidence-based analyst decisions without treating unknown indicators as automatically malicious.
+Implemented and validated a risk-gated VirusTotal **IP-address** reputation lookup, using correlated Defender XDR endpoint/network telemetry. A controlled incident-update rule launched CERBERUS after a new Defender custom-detection alert was grouped into incident **2471**. The final report recorded behavioral risk **25 (Medium)** and VirusTotal reputation for **104.20.23.154**. Domain, URL, and file-hash enrichment, as well as reputation-weighted final scoring, are future extensions; they were not demonstrated in this test.
 
 ### Phase 4 — Analyst-Approved Endpoint Containment (Planned)
 
@@ -324,7 +316,7 @@ Planned capabilities:
 - Record approval decisions, execution results, and investigation outcomes.
 - Validate containment safely within the authorized lab environment.
 
-**Current Project Status:** Phases 1, 2, and 2.5 implemented and validated. Phases 3 and 4 remain planned.
+**Current Project Status:** Phases 1, 2, 2.5, and 3 implemented and validated in a controlled lab. Phase 4 remains planned.
 
 ## Validation Evidence
 
@@ -394,7 +386,7 @@ The following screenshots document the successful execution of CERBERUS's endpoi
 
 The validated workflow successfully retrieved **2,404 endpoint process events**, **20 suspicious-process investigation records**, **13 behavioral summary records**, and **50 network events**.
 
-The results demonstrate automated evidence collection and consolidation rather than confirmed malicious activity. Automated process-to-network correlation, threat intelligence enrichment, and analyst-approved containment remain planned enhancements.
+These Phase 2 results demonstrate evidence collection and consolidation rather than confirmed malicious activity. Process-to-network correlation and IP reputation enrichment were implemented in subsequent phases; analyst-approved containment remains planned.
 
 
 ## Phase 2.5 — Operation Nightfall: Automated Process-to-Network Correlation
@@ -530,5 +522,56 @@ Operation Nightfall successfully demonstrated automated process-to-network evide
 
 **Current limitations:** Correlated activity was not automatically classified as malicious. Threat intelligence enrichment, enforced analyst approval, and endpoint containment were not implemented or validated in this phase.
 
-**Next phase:** Phase 3 — Threat Intelligence Enrichment.
+**Subsequent phase:** Phase 3 — behavioral risk scoring, incident-update automation, and VirusTotal IP enrichment (validated November 4, 2026).
 
+
+---
+
+## Phase 3 — CERBERUS Automated SOAR & Threat Intelligence Validation
+
+### Objective and test environment
+
+Validate the complete controlled-lab sequence from an endpoint-generated event through Defender XDR detection, Sentinel incident correlation, Logic Apps investigation, behavioral risk assessment, and VirusTotal IP reputation enrichment. The authorized Windows 11 lab endpoint was `nyc-cl11`. The destination `example.com` was benign; the test was designed to validate the detection and investigation pipeline, not to demonstrate actual malware or command-and-control activity.
+
+### Detection and incident automation
+
+A benign PowerShell command was encoded as UTF-16LE Base64 and launched with `powershell.exe -NoProfile -EncodedCommand`; the decoded command performed an HTTPS request to `https://example.com`. Microsoft Defender XDR recorded a successful connection initiated by PowerShell, with process ID **9048**, remote IP **104.20.23.154**, and event time **November 4, 2026, 3:52:18 PM** (local lab time).
+
+The custom Defender detection rule `CERBERUS-FINAL-TEST - Encoded PowerShell Network Activity` matched successful `DeviceNetworkEvents` connections from `nyc-cl11` where the initiating process was PowerShell, its command line contained `-EncodedCommand`, and the destination URL was `example.com`. Defender produced a **Medium** alert and grouped it into existing incident **2471**, titled `Execution incident on one endpoint`. The incident showed **three alerts** and a **4:01 PM** update time.
+
+A controlled Sentinel automation rule configured for **incident updated**, with **alert added** and incident/alert-title filters, was active during the test. The CERBERUS Logic App recorded a **successful run at 4:03:06 PM**, lasting **7.92 seconds**. The Sentinel incident trigger output contained `IncidentId: 2471` and the CERBERUS-FINAL-TEST alert name. Together, the incident update, run timing, and trigger payload provide evidence of the incident-driven handoff; the test does not establish the behavior of every possible alert-grouping scenario.
+
+### Risk-gated enrichment
+
+CERBERUS correlated endpoint process and network evidence, calculated behavioral risk, and used a threshold of **25** to decide whether to attempt IP reputation enrichment. In this execution the **True** branch ran successfully: Key Vault secret retrieval, VirusTotal IP lookup, reputation summary, and threat-intelligence result assignment all completed. The workflow then built the consolidated investigation report.
+
+| Validated field | Observed result |
+|---|---|
+| Behavioral risk | **25 / 100 — Medium** |
+| Correlated remote IP | `104.20.23.154` |
+| Threat intelligence provider | VirusTotal |
+| Malicious / suspicious detections | **0 / 0** |
+| Harmless / undetected detections | **55 / 37** |
+| Analyst disposition | **Pending analyst review** |
+| Recommended action | **Review collected evidence before containment** |
+| Logic App result | **Succeeded** |
+
+**Interpretation:** The behavioral score reflects encoded PowerShell execution, not proof of malicious activity. The VirusTotal result supplies reputation context for the IP at lookup time; zero malicious detections does not guarantee safety. The final assessment remains analyst-driven, with **no automatic endpoint isolation or remediation**.
+
+### Phase 3 evidence
+
+![Figure 29 — CERBERUS successful risk-gated enrichment](screenshots/29-CERBERUS-End-to-End-Automation-Success.PNG)
+
+*Figure 29 — Successful CERBERUS execution showing the True risk-gate branch, VirusTotal API key retrieval and IP lookup, threat-intelligence result assignment, and final investigation-report generation.*
+
+![Figure 30 — CERBERUS final enriched investigation report](screenshots/30-CERBERUS-Final-Enriched-Investigation-Report.PNG)
+
+*Figure 30 — Actual Logic App report output containing behavioral risk score 25 (Medium), VirusTotal reputation counts for 104.20.23.154, and a pending analyst-review disposition.*
+
+### Scope, limitations, and cleanup
+
+- This was a **controlled lab** test using a benign destination; it did not establish that the destination was malicious.
+- The validated reputation lookup covers **IP addresses**. URL/domain/hash enrichment and dynamic reputation-based risk-score adjustment are not yet implemented.
+- Analyst recommendations are informational; no enforced approval or containment action was tested.
+- Detection and incident grouping can vary across repeated events; a qualifying network event alone does not guarantee a fresh alert or automation run.
+- Temporary detection and automation rules should be disabled after evidence capture; cleanup is a separate operational step and is **not** claimed complete here.
