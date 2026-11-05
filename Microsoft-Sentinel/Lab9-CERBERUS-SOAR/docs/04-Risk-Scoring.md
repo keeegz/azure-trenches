@@ -69,13 +69,12 @@ The scoring stage follows this logical sequence:
 
 ### Result Selection
 
-The current correlation query orders results by descending risk score and then by descending network event timestamp.
+The correlation query ranks results by descending behavioral risk score, followed by descending network event timestamp, and returns up to 50 rows.
 
-The query limits the returned result set to 50 rows.
+The current workflow uses the highest-ranked correlated result for its reported behavioral risk assessment. It does not calculate an aggregate risk score across all events or alerts associated with the Microsoft Sentinel incident.
 
-The workflow uses the highest-ranked correlated result for its risk assessment rather than aggregating every event into a single incident-wide score.
+Consequently, the final reported risk score represents the selected correlated result rather than an incident-wide assessment.
 
-This distinction is important when interpreting the final investigation report.
 
 ### Related Documentation
 
@@ -105,11 +104,10 @@ The model uses additive scoring, meaning multiple indicators can contribute to t
 
 ### Raw Risk Score Calculation
 
-The raw risk score is calculated as:
+The raw risk score is calculated by adding the configured positive indicator weights and subtracting the routine Defender activity adjustment.
 
-`RawRiskScore = EncodedCommand + DownloadExecution + UnusualPort - RoutineDefenderActivity`
+The exact `iff()` expressions implementing this calculation are documented in Section 4 — KQL Risk Scoring Implementation.
 
-Each variable represents the configured numerical adjustment when its corresponding condition is satisfied, or zero otherwise.
 
 For example, a correlated event with encoded PowerShell execution and an unusual destination port, but no other matching indicators, produces:
 
@@ -242,15 +240,15 @@ This correlation provides the event context required for behavioral risk scoring
 | Field | Source | Purpose |
 |---|---|---|
 | `DeviceId` | Both tables | Associates events with the same Defender endpoint |
-| `ProcessId` | `DeviceProcessEvents` | Identifies the process recorded in process execution telemetry |
-| `InitiatingProcessId` | `DeviceNetworkEvents` | Identifies the process responsible for the network event |
-| `ProcessCreationTime` | `DeviceProcessEvents` | Helps distinguish process instances |
+| `ProcessId` | `DeviceProcessEvents` | Native process identifier used to match `InitiatingProcessId` |
+| `InitiatingProcessId` | `DeviceNetworkEvents.InitiatingProcessId` | Identifies the process responsible for the network event |
+| `ProcessCreationTime` | `DeviceProcessEvents` | Native process creation timestamp used to match `InitiatingProcessCreationTime` |
 | `InitiatingProcessCreationTime` | `DeviceNetworkEvents` | Helps match network activity to the originating process instance |
 | `ProcessCommandLine` | `DeviceProcessEvents` | Provides command-line context for behavioral scoring |
 | `RemoteIP` | `DeviceNetworkEvents` | Identifies the remote destination for enrichment |
 | `RemoteUrl` | `DeviceNetworkEvents` | Provides destination context |
 | `RemotePort` | `DeviceNetworkEvents` | Supports unusual-port evaluation |
-| `NetworkTimestamp` | Derived from network event timestamp | Supports result ordering and investigation chronology |
+| `NetworkTimestamp` | Alias of `DeviceNetworkEvents.Timestamp` | Network event timestamp renamed during the final `project` operation for ordering and investigation chronology |
 
 ### Correlation Logic
 
