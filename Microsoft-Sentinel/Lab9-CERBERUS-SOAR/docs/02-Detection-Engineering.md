@@ -161,3 +161,110 @@ The initiating process command line contained `-EncodedCommand`, satisfying the 
 The simulation was intentionally benign. The encoded command was used to validate detection visibility and alert generation, not to demonstrate malware execution, persistence, credential theft, or actual command-and-control activity.
 
 
+## 6. Detection Results & Incident Correlation
+
+### Defender XDR Detection Outcome
+
+The November 4, 2026 controlled simulation produced endpoint network telemetry matching the CERBERUS custom detection query.
+
+Microsoft Defender XDR generated an alert with the following characteristics:
+
+| Field | Validated Result |
+|---|---|
+| Detection rule | `CERBERUS-FINAL-TEST - Encoded PowerShell Network Activity` |
+| Alert severity | Medium |
+| Associated endpoint | `nyc-cl11` |
+| Incident number | `2471` |
+| Incident title | `Execution incident on one endpoint` |
+| Alerts associated with incident | 3 |
+| Incident update time | November 4, 2026, approximately 4:01 PM (lab local time) |
+
+### Existing Incident Correlation
+
+Rather than creating a new incident, Defender XDR correlated the CERBERUS alert into existing incident `2471`.
+
+The incident retained its generic title, `Execution incident on one endpoint`, instead of adopting the custom detection rule's name.
+
+This distinction is significant because Microsoft Sentinel automation rules can evaluate incident properties, including titles and update conditions.
+
+### Automation Rule Implications
+
+CERBERUS used two controlled Sentinel automation configurations during validation.
+
+**Incident Creation Rule**
+
+- Rule: `CERBERUS - Controlled Incident Triage`
+- Trigger: When an incident is created
+- Condition: Incident title contains `CERBERUS-FINAL-TEST`
+- Action: Run `la-cerberus-soc-triage`
+
+The creation rule's title condition did not match the final test scenario because the detection alert was grouped into an existing incident with a different title.
+
+**Incident Update Rule**
+
+- Rule: `CERBERUS - Controlled Incident Update Validation`
+- Trigger: When an incident is updated
+- Conditions: Alert added, incident title contains `Execution incident on one endpoint`, and alert title contains `CERBERUS-FINAL-TEST`
+- Action: Run `la-cerberus-soc-triage`
+
+The update rule was configured to handle the observed alert-grouping scenario.
+
+### Validated Investigation Handoff
+
+A successful CERBERUS Logic App run was recorded on November 4, 2026, at approximately 4:03:06 PM.
+
+The execution completed in 7.92 seconds, and its Microsoft Sentinel trigger payload contained incident `2471` and the expected CERBERUS custom detection alert title.
+
+These observations confirm that the playbook successfully processed the intended incident context. The available run evidence does not independently establish which automation rule initiated that execution.
+
+### Detection Engineering Lessons Learned
+
+The final validation demonstrated several important operational considerations:
+
+1. A custom detection alert does not necessarily produce a new incident.
+2. Alert correlation can preserve an existing incident title.
+3. Incident-creation and incident-update triggers serve different automation scenarios.
+4. Automation filters should account for both incident-level and alert-level attributes.
+5. Successful detection does not automatically guarantee downstream playbook execution.
+
+These findings highlight the importance of validating the entire detection-to-investigation workflow rather than evaluating custom detection logic in isolation.
+
+
+## 7. Detection Validation Evidence
+
+The following evidence documents endpoint telemetry visibility, process-to-network correlation, and successful downstream CERBERUS investigation.
+
+### Endpoint Network Telemetry
+
+
+**Figure 5 — CERBERUS Network Investigation Workflow**
+
+![CERBERUS network investigation workflow](../screenshots/02-CERBERUS-Defender-Network-Telemetry.PNG)
+
+*Earlier Phase 2 Logic Apps evidence showing the retrieval and processing of Defender XDR network telemetry for automated investigation. This screenshot does not demonstrate the final encoded PowerShell detection rule.*
+
+### Process-to-Network Correlation
+
+**Figure 10 — Operation Nightfall KQL Correlation**
+
+![Operation Nightfall process-to-network correlation](../screenshots/07-CERBERUS-Nightfall-Process-Network-Correlation.PNG)
+
+*Earlier controlled validation of process-to-network correlation using Defender XDR Advanced Hunting. This demonstrates the correlation methodology subsequently used by CERBERUS.*
+
+### Final Investigation Execution
+
+**Figure 29 — CERBERUS End-to-End Automation Success**
+
+![CERBERUS successful investigation execution](../screenshots/29-CERBERUS-End-to-End-Automation-Success.PNG)
+
+*Successful November 4, 2026 Logic App execution demonstrating conditional threat intelligence enrichment and investigation report generation following incident ingestion.*
+
+### Evidence Scope
+
+The final custom detection configuration and incident `2471` are documented through their observed settings and results in Sections 4 and 6.
+
+The screenshots above support related telemetry, correlation, and investigation capabilities. They should not be interpreted as direct visual evidence of the final custom detection rule configuration or the Defender incident alert list.
+
+Additional screenshots of the final detection rule and incident correlation would strengthen this evidence set if available.
+
+
