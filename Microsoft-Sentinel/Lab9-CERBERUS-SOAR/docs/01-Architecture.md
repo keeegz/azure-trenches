@@ -300,6 +300,16 @@ The enrichment branch requires both of the following conditions:
 
 When either condition is not satisfied, CERBERUS skips the external API lookup.
 
+
+### Implementation Evidence — Conditional Threat Intelligence
+
+**Figure 34 — CERBERUS Conditional VirusTotal Enrichment**
+
+![CERBERUS conditional enrichment showing Azure Key Vault, VirusTotal IP reputation lookup, reputation summary, and investigation report generation](../screenshots/34-CERBERUS-Conditional-Threat-Intelligence.PNG)
+
+*The True branch retrieves the VirusTotal API credential from Azure Key Vault, queries IP reputation, summarizes the results, and stores the threat intelligence findings. The False branch skips external enrichment, and both paths continue to investigation report generation.*
+
+
 ### API Credential Management
 
 The VirusTotal API credential is stored in Azure Key Vault rather than embedded directly in the Logic App's HTTP request configuration.
