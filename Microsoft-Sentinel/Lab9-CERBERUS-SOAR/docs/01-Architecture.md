@@ -243,10 +243,6 @@ The calculated score is constrained to a range of 0–100.
 | 50–69 | High |
 | 70–100 | Critical |
 
-
-
-
-
 ### Correlation and Prioritization
 
 CERBERUS correlates endpoint process execution with network activity using device identifiers, process identifiers, and process creation timestamps.
@@ -505,5 +501,7 @@ The final output supports analyst review. Automated endpoint containment is outs
 
 ### Implementation Evidence
 
-The architecture diagram is a logical representation of the system. Actual Azure Logic Apps designer screenshots and configuration evidence are maintained separately to demonstrate the implemented workflow.
+The architecture diagram provides a logical representation of the CERBERUS investigation pipeline. Figures 31–34 embedded throughout this document provide implementation evidence from the Azure Logic Apps designer, covering incident ingestion, endpoint investigation, behavioral risk assessment, and conditional threat intelligence enrichment.
+
+Additional execution evidence, including the successful end-to-end run and final investigation report, is preserved in the project screenshots directory and referenced in Section 8.
 
