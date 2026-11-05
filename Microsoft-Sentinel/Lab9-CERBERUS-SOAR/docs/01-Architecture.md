@@ -103,6 +103,20 @@ The playbook executes Microsoft Defender XDR Advanced Hunting queries to retriev
 
 The investigation examines process execution, behavioral indicators, and outbound network activity. A correlation query associates process events with network connections using endpoint and process identifiers.
 
+### Implementation Evidence — Incident Ingestion and Endpoint Investigation
+
+**Figure 31 — Incident Ingestion Workflow**
+
+![CERBERUS Sentinel incident ingestion and endpoint telemetry workflow](../screenshots/31-CERBERUS-Incident-Ingestion-Workflow.PNG)
+
+*The Sentinel incident trigger, payload capture, incident metadata extraction, Defender device identification, and initial endpoint investigation actions.*
+
+**Figure 32 — Endpoint Investigation Workflow**
+
+![CERBERUS process behavioral and network investigation workflow](../screenshots/32-CERBERUS-Endpoint-Investigation-Workflow.PNG)
+
+*Defender Advanced Hunting actions and summaries for suspicious processes, behavioral indicators, and network activity.*
+
 ### Behavioral Risk Evaluation
 
 CERBERUS evaluates correlated process and network activity using a weighted KQL scoring model.
@@ -222,6 +236,10 @@ The calculated score is constrained to a range of 0–100.
 | 50–69 | High |
 | 70–100 | Critical |
 
+
+
+
+
 ### Correlation and Prioritization
 
 CERBERUS correlates endpoint process execution with network activity using device identifiers, process identifiers, and process creation timestamps.
@@ -229,6 +247,16 @@ CERBERUS correlates endpoint process execution with network activity using devic
 Correlated events are ordered by descending risk score and then by network event timestamp.
 
 The current implementation uses the highest-ranked correlated result for the investigation's behavioral risk assessment. It does not calculate an aggregate risk score across every alert or event in the incident.
+
+
+### Implementation Evidence — Correlation and Risk Assessment
+
+**Figure 33 — CERBERUS Correlation and Risk Assessment Workflow**
+
+![CERBERUS process-network correlation, behavioral risk scoring, conditional routing, and investigation report workflow](../screenshots/33-CERBERUS-Risk-Assessment-Workflow.PNG)
+
+*The Logic App correlates process and network activity, calculates a behavioral risk score, extracts the remote IP address, and evaluates the enrichment condition before generating an investigation report.*
+
 
 ### Threat Intelligence Enrichment Threshold
 
