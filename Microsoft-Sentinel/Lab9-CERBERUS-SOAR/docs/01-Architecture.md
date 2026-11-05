@@ -49,7 +49,10 @@ Defender XDR generates an alert and correlates it with an incident. During final
 
 Microsoft Sentinel evaluates configured automation rules against incident creation or update events.
 
-During final validation, an incident-update automation rule matched the addition of a CERBERUS test alert and invoked the `la-cerberus-soc-triage` Logic App playbook.
+
+During final validation, a CERBERUS test alert was added to an existing Defender XDR incident. A Microsoft Sentinel incident-update automation rule was configured to invoke the `la-cerberus-soc-triage` Logic App when the specified alert and incident conditions were satisfied.
+
+A successful Logic App run subsequently processed incident `2471` and the expected CERBERUS alert. The available run evidence confirms successful incident processing but does not independently establish which automation rule initiated that execution.
 
 ### Stage 4 — Automated Endpoint Investigation
 
@@ -148,7 +151,10 @@ CERBERUS supports analyst decision-making but does not currently perform automat
 
 ### Severity Routing
 
-The workflow also includes severity-based routing logic for handling incident classifications.
+
+The Logic App includes a severity-based Switch action with configured routing cases. The presence of these branches demonstrates the implemented routing structure; however, the November 4 end-to-end validation specifically confirmed successful investigation, behavioral scoring, conditional VirusTotal enrichment, and report generation.
+
+The validation did not independently establish successful execution of every severity-routing case.
 
 
 The routing configuration is documented separately in [03 — SOAR Automation](03-SOAR-Automation.md), including its implementation and validation status.
