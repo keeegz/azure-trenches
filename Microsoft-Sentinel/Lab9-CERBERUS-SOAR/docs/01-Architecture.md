@@ -33,6 +33,58 @@ CERBERUS integrates Microsoft security services and external threat intelligence
 
 ## 3. End-to-End Data Flow
 
+CERBERUS follows an incident-driven investigation workflow that connects endpoint detection, Microsoft Sentinel automation, behavioral analysis, and external threat intelligence.
+
+### Stage 1 — Endpoint Telemetry Collection
+
+A Defender-onboarded Windows 11 virtual machine (`nyc-cl11`) generates process execution and network connection telemetry. Microsoft Defender for Endpoint records the relevant activity in `DeviceProcessEvents` and `DeviceNetworkEvents`.
+
+### Stage 2 — Detection and Incident Correlation
+
+A custom Microsoft Defender XDR detection rule identifies encoded PowerShell activity associated with a successful outbound network connection.
+
+Defender XDR generates an alert and correlates it with an incident. During final validation, the new alert was added to existing incident `2471`.
+
+### Stage 3 — Microsoft Sentinel Automation
+
+Microsoft Sentinel evaluates configured automation rules against incident creation or update events.
+
+During final validation, an incident-update automation rule matched the addition of a CERBERUS test alert and invoked the `la-cerberus-soc-triage` Logic App playbook.
+
+### Stage 4 — Automated Endpoint Investigation
+
+The playbook receives incident metadata and performs Defender XDR investigation queries.
+
+CERBERUS retrieves relevant endpoint process and network telemetry, then correlates process execution with outbound connections using KQL.
+
+### Stage 5 — Behavioral Risk Assessment
+
+Correlated events are evaluated using weighted behavioral indicators, including encoded PowerShell execution, download-and-execute patterns, unusual destination ports, and known routine Defender activity.
+
+The resulting risk score is bounded between 0 and 100 and assigned a severity classification.
+
+### Stage 6 — Conditional Threat Intelligence Enrichment
+
+When a remote IP address is available and the selected correlated event meets the configured risk threshold of 25, CERBERUS enters its threat intelligence enrichment branch.
+
+The playbook retrieves the VirusTotal API credential from Azure Key Vault and requests reputation information for the remote IP address.
+
+If the conditions are not satisfied, enrichment is skipped.
+
+### Stage 7 — Investigation Report Generation
+
+CERBERUS generates a structured report containing incident metadata, endpoint evidence, process and network correlation, behavioral risk assessment, available threat intelligence, and an analyst assessment.
+
+The report recommends analyst review before any containment decision.
+
+### Validated Execution
+
+On November 4, 2026, CERBERUS successfully processed incident `2471`, calculated a behavioral risk score of `25` (Medium), enriched remote IP `104.20.23.154` through VirusTotal, and generated a completed investigation report.
+
+The successful Logic App execution completed in approximately 7.92 seconds. No automated endpoint isolation or remediation was performed.
+
+
+
 ## 4. Logic App Workflow Components
 
 ## 5. Detection and Incident Automation
