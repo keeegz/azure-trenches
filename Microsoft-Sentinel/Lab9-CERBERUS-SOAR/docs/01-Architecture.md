@@ -395,38 +395,56 @@ Detailed report validation and test methodology are maintained in `07-Validation
 The following diagram illustrates the validated CERBERUS investigation pipeline, including endpoint telemetry collection, incident automation, behavioral risk assessment, conditional threat intelligence enrichment, and structured reporting.
 
 ```mermaid
-flowchart TD
-    A["Windows 11 Endpoint - NYC-CL11"]
-    B["Microsoft Defender for Endpoint"]
-    C["Microsoft Defender XDR - Detection and Incident Correlation"]
-    D["Microsoft Sentinel - Incident Automation Rules"]
-    E["Azure Logic Apps - CERBERUS SOAR Playbook"]
-    F["Defender XDR Advanced Hunting"]
-    G["KQL Process and Network Correlation"]
-    H["Behavioral Risk Scoring"]
-    I{"Risk Score >= 25 and Remote IP Available?"}
-    J["Azure Key Vault - Retrieve API Credential"]
-    K["VirusTotal - IP Reputation Lookup"]
-    L["Summarize Threat Intelligence"]
-    M["Skip External Enrichment"]
-    N["Build Structured Investigation Report"]
-    O["Analyst Review - No Automatic Containment"]
 
-    A --> B
-    B --> C
-    C --> D
+flowchart LR
+    subgraph DET["1. Detection & Incident Creation"]
+        direction TB
+        A["Windows 11 Endpoint"]
+        B["Defender for Endpoint"]
+        C["Defender XDR"]
+        D["Microsoft Sentinel"]
+        A --> B --> C --> D
+    end
+
+    subgraph SOAR["2. CERBERUS Investigation"]
+        direction TB
+        E["Sentinel Incident Trigger"]
+        F["Defender Advanced Hunting"]
+        G["KQL Process-Network Correlation"]
+        H["Behavioral Risk Scoring"]
+        I{"Risk threshold met and IP available?"}
+        E --> F --> G --> H --> I
+    end
+
+    subgraph ENRICH["3. Enrichment & Reporting"]
+        direction TB
+        J["Azure Key Vault"]
+        K["VirusTotal IP Reputation"]
+        L["Summarize Threat Intelligence"]
+        M["Skip Enrichment"]
+        N["Structured Investigation Report"]
+        O["Analyst Review"]
+        J --> K --> L --> N
+        M --> N
+        N --> O
+    end
+
     D --> E
-    E --> F
-    F --> G
-    G --> H
-    H --> I
     I -->|Yes| J
-    J --> K
-    K --> L
-    L --> N
     I -->|No| M
-    M --> N
-    N --> O
+
+    classDef endpoint fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+    classDef detection fill:#ede9fe,stroke:#7c3aed,color:#4c1d95
+    classDef investigation fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    classDef intelligence fill:#dcfce7,stroke:#16a34a,color:#14532d
+    classDef decision fill:#fef3c7,stroke:#d97706,color:#78350f
+
+    class A,B endpoint
+    class C,D detection
+    class E,F,G,H investigation
+    class J,K,L,N,O intelligence
+    class I decision
+
 ```
 
 ### Architecture Interpretation
