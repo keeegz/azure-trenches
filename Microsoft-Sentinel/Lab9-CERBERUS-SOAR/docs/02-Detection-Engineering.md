@@ -268,3 +268,75 @@ The screenshots above support related telemetry, correlation, and investigation 
 Additional screenshots of the final detection rule and incident correlation would strengthen this evidence set if available.
 
 
+
+## 8. Detection Limitations & Engineering Considerations
+
+CERBERUS was developed and validated in a controlled Microsoft Defender XDR and Microsoft Sentinel lab environment. The detection logic demonstrates successful telemetry collection, custom alert generation, and downstream investigation, but several limitations must be considered before broader deployment.
+
+### Detection Scope
+
+The final custom detection query contains explicit filters for the lab endpoint `nyc-cl11` and the benign destination `example.com`.
+
+These restrictions support reproducible testing but prevent the rule from identifying equivalent behavior on other endpoints or involving different destinations.
+
+A broader deployment would require replacing these test-specific filters with appropriate device scoping and behavioral conditions.
+
+### False Positives and Detection Evasion
+
+Encoded PowerShell execution is not inherently malicious. Legitimate administrative scripts and automation tools may use encoded commands.
+
+Conversely, suspicious PowerShell activity may not include the exact `-EncodedCommand` argument or generate a successful network connection.
+
+The current rule may therefore produce false positives and false negatives. It does not detect all malicious PowerShell execution techniques.
+
+### Telemetry Dependencies
+
+The detection depends on Microsoft Defender for Endpoint telemetry being collected and available through Microsoft Defender XDR.
+
+Missing endpoint onboarding, telemetry gaps, sensor issues, or unavailable network events can prevent matching activity from appearing in the hunting results.
+
+The rule also relies on initiating-process command-line information being present in `DeviceNetworkEvents`.
+
+### Detection Scheduling and Latency
+
+The final custom detection rule was configured to evaluate every hour using a one-hour KQL lookback.
+
+This configuration does not guarantee immediate alert generation or downstream automation execution.
+
+Detection latency may depend on event ingestion, rule scheduling, alert generation, incident correlation, and Sentinel automation processing.
+
+### Incident Correlation and Automation Reliability
+
+Defender XDR may correlate new alerts into existing incidents rather than creating new incidents.
+
+Automation rules relying exclusively on incident-creation events or incident-title matching may therefore miss relevant alert additions.
+
+The controlled incident-update rule addressed the observed test scenario, but additional validation would be required for other incident states, alert-grouping behaviors, and automation conditions.
+
+### Risk Scoring and Threat Intelligence Boundaries
+
+The downstream CERBERUS behavioral risk model uses lab-defined weighted indicators rather than statistically calibrated threat probabilities.
+
+VirusTotal IP reputation provides additional investigative context but does not independently establish malicious intent or modify the current behavioral risk score.
+
+The investigation report supports analyst review. CERBERUS does not currently enforce an analyst approval workflow or perform automatic endpoint isolation or remediation.
+
+### Production Engineering Considerations
+
+Before considering broader deployment, the detection and investigation pipeline would require:
+
+- Removal of hardcoded lab-specific endpoint and destination filters.
+- Testing against representative benign and suspicious activity.
+- False-positive analysis and detection tuning.
+- Verification of required telemetry fields and device coverage.
+- Evaluation of detection latency and incident-correlation behavior.
+- Validation of automation-rule conditions and failure handling.
+- Review of API credential protection, access permissions, and operational costs.
+- Defined analyst response procedures and appropriate approval controls.
+
+### Engineering Conclusion
+
+CERBERUS successfully demonstrated a controlled detection-to-investigation workflow using Defender XDR, Microsoft Sentinel, Azure Logic Apps, KQL correlation, behavioral risk scoring, and conditional VirusTotal enrichment.
+
+The implementation establishes a foundation for further detection engineering and SOAR development while preserving the distinction between observed suspicious behavior, external reputation context, and confirmed malicious activity.
+
