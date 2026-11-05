@@ -87,7 +87,114 @@ The successful Logic App execution completed in approximately 7.92 seconds. No a
 
 ## 4. Logic App Workflow Components
 
+The CERBERUS orchestration engine is implemented as an Azure Logic Apps playbook named `la-cerberus-soc-triage`.
+
+The playbook coordinates incident ingestion, endpoint investigation, behavioral scoring, conditional threat intelligence enrichment, and structured reporting.
+
+### Incident Ingestion and Metadata
+
+The workflow begins with the Microsoft Sentinel incident trigger.
+
+CERBERUS captures the incoming incident payload and extracts relevant metadata, including the incident identifier, alert information, severity, and available endpoint identifiers.
+
+### Endpoint Investigation
+
+The playbook executes Microsoft Defender XDR Advanced Hunting queries to retrieve endpoint evidence.
+
+The investigation examines process execution, behavioral indicators, and outbound network activity. A correlation query associates process events with network connections using endpoint and process identifiers.
+
+### Behavioral Risk Evaluation
+
+CERBERUS evaluates correlated process and network activity using a weighted KQL scoring model.
+
+The resulting assessment contains a numeric risk score, risk classification, remote IP address, and evaluation status.
+
+The current implementation selects the highest-ranked correlated result rather than calculating an aggregate score across the entire incident.
+
+### Conditional Threat Intelligence
+
+A Logic Apps condition checks whether a remote IP address is available and the selected correlated event has a risk score of at least 25.
+
+When both conditions are satisfied, the enrichment branch:
+
+1. Retrieves the VirusTotal API credential from Azure Key Vault.
+2. Requests IP reputation information from VirusTotal.
+3. Summarizes the returned reputation statistics.
+4. Stores the threat intelligence result for reporting.
+
+When the conditions are not satisfied, the external enrichment actions are skipped.
+
+### Investigation Report
+
+The playbook assembles the collected evidence into a structured investigation report.
+
+The report includes incident metadata, endpoint telemetry, process and network findings, behavioral risk assessment, threat intelligence results, and an analyst assessment.
+
+CERBERUS supports analyst decision-making but does not currently perform automated endpoint containment or remediation.
+
+### Severity Routing
+
+The workflow also includes severity-based routing logic for handling incident classifications.
+
+The routing configuration is documented separately in `03-SOAR-Automation.md`, including its implementation and validation status.
+
+
 ## 5. Detection and Incident Automation
+
+CERBERUS uses Microsoft Defender XDR custom detection rules and Microsoft Sentinel automation rules to initiate incident-driven investigations.
+
+### Defender XDR Custom Detection
+
+The final validation detection was named:
+
+`CERBERUS-FINAL-TEST - Encoded PowerShell Network Activity`
+
+The rule identified encoded PowerShell execution associated with a successful outbound connection to the controlled test destination `example.com`.
+
+The detection used `DeviceNetworkEvents` telemetry and was configured with Medium severity, an hourly evaluation schedule, and incident correlation.
+
+### Sentinel Incident Automation
+
+Two Sentinel automation rules were configured for controlled testing:
+
+**Incident Creation Rule**
+
+- Name: `CERBERUS - Controlled Incident Triage`
+- Trigger: When an incident is created
+- Condition: Incident title contains `CERBERUS-FINAL-TEST`
+- Action: Run `la-cerberus-soc-triage`
+
+**Incident Update Rule**
+
+- Name: `CERBERUS - Controlled Incident Update Validation`
+- Trigger: When an incident is updated
+- Conditions: An alert was added, the incident title contains `Execution incident on one endpoint`, and an alert title contains `CERBERUS-FINAL-TEST`
+- Action: Run `la-cerberus-soc-triage`
+
+### Incident Correlation Consideration
+
+During final validation, Defender XDR grouped the new custom detection alert into an existing incident rather than creating a new incident.
+
+The resulting incident retained the generic title `Execution incident on one endpoint`.
+
+Consequently, the incident-creation rule's title condition did not match this scenario. The incident-update rule was designed to handle the addition of the CERBERUS test alert to the existing incident.
+
+### Validated Outcome
+
+The final test involved incident `2471`, which contained the CERBERUS detection alert.
+
+The `la-cerberus-soc-triage` playbook executed successfully on November 4, 2026, at approximately 4:03 PM, processing the incident and producing an enriched investigation report.
+
+The successful run's trigger payload included incident `2471` and the expected CERBERUS alert title.
+
+### Operational Considerations
+
+The incident-update automation rule was configured as a temporary validation rule with an expiration date of November 5, 2026.
+
+These test-specific automation conditions are not intended to serve as unrestricted production incident triggers. The rules should be reviewed and disabled as part of lab cleanup.
+
+Detailed rule configuration, detection KQL, and validation evidence are maintained in the dedicated detection engineering and SOAR automation documentation.
+
 
 ## 6. Behavioral Risk Assessment
 
