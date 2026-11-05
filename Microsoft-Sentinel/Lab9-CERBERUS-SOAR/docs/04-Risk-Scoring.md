@@ -266,6 +266,20 @@ The process creation timestamp is important because process identifiers may be r
 
 Using the device identifier, process identifier, and process creation timestamp together reduces the likelihood of associating a network event with an unrelated process instance.
 
+
+### Join Behavior
+
+CERBERUS uses a KQL `join kind=inner` operation to correlate `DeviceNetworkEvents` with `DeviceProcessEvents`.
+
+Only records satisfying the configured device identifier, process identifier, and process creation timestamp relationships are retained.
+
+Network events without a matching process record are excluded from the correlated results.
+
+The query also restricts both telemetry sources to the preceding seven days and filters for PowerShell activity.
+
+These constraints improve the focus of the investigation but can exclude relevant activity when matching telemetry is missing or falls outside the configured query window.
+
+
 ### Behavioral Scoring Inputs
 
 After correlation, CERBERUS evaluates:
