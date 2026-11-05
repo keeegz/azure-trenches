@@ -198,7 +198,130 @@ Detailed rule configuration, detection KQL, and validation evidence are maintain
 
 ## 6. Behavioral Risk Assessment
 
+CERBERUS implements a custom behavioral risk assessment model using Kusto Query Language (KQL) to evaluate correlated endpoint process and network activity.
+
+The model assigns weighted scores to suspicious behaviors while reducing scores for recognized routine security telemetry.
+
+### Behavioral Scoring Indicators
+
+| Behavioral Indicator | Score Adjustment |
+|---|---:|
+| Encoded PowerShell command execution | +25 |
+| Download-and-execute command patterns | +25 |
+| Network connection using an unusual destination port | +20 |
+| Recognized routine Microsoft Defender activity | -40 |
+
+The calculated score is constrained to a range of 0–100.
+
+### Risk Classification
+
+| Risk Score | Classification |
+|---|---|
+| 0–24 | Low |
+| 25–49 | Medium |
+| 50–69 | High |
+| 70–100 | Critical |
+
+### Correlation and Prioritization
+
+CERBERUS correlates endpoint process execution with network activity using device identifiers, process identifiers, and process creation timestamps.
+
+Correlated events are ordered by descending risk score and then by network event timestamp.
+
+The current implementation uses the highest-ranked correlated result for the investigation's behavioral risk assessment. It does not calculate an aggregate risk score across every alert or event in the incident.
+
+### Threat Intelligence Enrichment Threshold
+
+CERBERUS evaluates whether the selected correlated event has a risk score of at least 25 and a nonempty remote IP address.
+
+When both conditions are satisfied, the workflow invokes the VirusTotal enrichment branch.
+
+A score below 25, or an unavailable remote IP address, causes the enrichment branch to be skipped.
+
+### Validated Scoring Behavior
+
+During a benign network investigation, CERBERUS evaluated routine endpoint activity with a risk score of 0, and external threat intelligence enrichment was skipped.
+
+During the final controlled encoded PowerShell simulation on November 4, 2026, the correlated activity received a score of 25 (Medium).
+
+The risk threshold was satisfied, and the playbook successfully executed the VirusTotal enrichment branch.
+
+### Design Considerations
+
+The behavioral weights and classification thresholds are lab-defined heuristics, not statistically calibrated threat probabilities.
+
+A higher score indicates that more configured suspicious indicators were observed; it does not independently establish malicious intent.
+
+VirusTotal reputation results provide additional investigation context but do not currently modify the behavioral risk score.
+
+The complete scoring KQL, field mappings, and implementation details are documented separately in `04-Risk-Scoring.md`.
+
+
 ## 7. Threat Intelligence Enrichment
+
+CERBERUS integrates the VirusTotal API to enrich selected remote IP addresses with external threat intelligence.
+
+Enrichment is conditional rather than unconditional. The playbook performs reputation lookups only when its behavioral risk gate is satisfied.
+
+### Enrichment Decision
+
+The enrichment branch requires both of the following conditions:
+
+1. A nonempty remote IP address is available from correlated endpoint telemetry.
+2. The selected correlated event has a behavioral risk score of at least 25.
+
+When either condition is not satisfied, CERBERUS skips the external API lookup.
+
+### API Credential Management
+
+The VirusTotal API credential is stored in Azure Key Vault rather than embedded directly in the Logic App's HTTP request configuration.
+
+During enrichment, the playbook retrieves the credential from Key Vault and uses it to authenticate the VirusTotal API request.
+
+The credential itself must never be included in public GitHub documentation, screenshots, or exported workflow definitions.
+
+### VirusTotal Reputation Lookup
+
+CERBERUS submits the extracted remote IP address to the VirusTotal IP reputation endpoint.
+
+The returned reputation statistics are summarized into a structured threat intelligence object containing:
+
+- Intelligence provider
+- Queried IP address
+- Malicious detection count
+- Suspicious detection count
+- Harmless detection count
+- Undetected detection count
+
+### Investigation Report Integration
+
+The summarized reputation information is incorporated into the final CERBERUS investigation report alongside endpoint telemetry and behavioral risk findings.
+
+The reputation results supplement analyst investigation rather than automatically determining whether an endpoint should be isolated.
+
+### Validated Enrichment
+
+During the November 4, 2026 end-to-end test, CERBERUS evaluated remote IP `104.20.23.154` and successfully executed the VirusTotal enrichment branch.
+
+The returned reputation statistics were:
+
+| Reputation Category | Result |
+|---|---:|
+| Malicious | 0 |
+| Suspicious | 0 |
+| Harmless | 55 |
+| Undetected | 37 |
+
+The playbook completed successfully and included these values in its structured investigation report.
+
+### Security and Interpretation
+
+VirusTotal reputation data is contextual intelligence. Zero malicious detections does not establish that an IP address or associated activity is safe.
+
+The current implementation does not automatically isolate endpoints, block indicators, or modify its behavioral risk score based on VirusTotal results.
+
+Detailed API configuration, Key Vault integration, and enrichment expressions are documented separately in `05-Threat-Intelligence.md`.
+
 
 ## 8. Investigation Report Generation
 
