@@ -81,6 +81,7 @@ Encoded PowerShell execution combined with outbound network activity can be rele
 
 This detection was designed to validate telemetry visibility, custom alert generation, and downstream incident processing. It does not classify the observed benign simulation as confirmed malicious activity.
 
+The final custom detection rule requires the combination of encoded PowerShell execution, a successful outbound network connection, and the configured lab-specific endpoint and destination filters. It is not a standalone detector for all encoded PowerShell commands or all PowerShell network activity.
 
 ## 4. Custom Detection Rule Configuration
 
@@ -234,8 +235,7 @@ These findings highlight the importance of validating the entire detection-to-in
 
 The following evidence documents endpoint telemetry visibility, process-to-network correlation, and successful downstream CERBERUS investigation.
 
-### Endpoint Network Telemetry
-
+### Automated Network Investigation Evidence
 
 **Figure 5 — CERBERUS Network Investigation Workflow**
 
@@ -339,4 +339,12 @@ Before considering broader deployment, the detection and investigation pipeline 
 CERBERUS successfully demonstrated a controlled detection-to-investigation workflow using Defender XDR, Microsoft Sentinel, Azure Logic Apps, KQL correlation, behavioral risk scoring, and conditional VirusTotal enrichment.
 
 The implementation establishes a foundation for further detection engineering and SOAR development while preserving the distinction between observed suspicious behavior, external reputation context, and confirmed malicious activity.
+
+
+### Related Architecture Documentation
+
+The complete CERBERUS system architecture, including Microsoft Sentinel incident ingestion, Logic Apps orchestration, behavioral risk assessment, conditional VirusTotal enrichment, and structured investigation reporting, is documented in [01 — System Architecture & Design](01-Architecture.md).
+
+This detection engineering document focuses specifically on the detection logic, custom rule configuration, controlled simulation, alert correlation, and validation evidence supporting that architecture.
+
 
