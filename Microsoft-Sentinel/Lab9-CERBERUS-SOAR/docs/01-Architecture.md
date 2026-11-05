@@ -150,7 +150,8 @@ CERBERUS supports analyst decision-making but does not currently perform automat
 
 The workflow also includes severity-based routing logic for handling incident classifications.
 
-The routing configuration is documented separately in `03-SOAR-Automation.md`, including its implementation and validation status.
+
+The routing configuration is documented separately in [03 — SOAR Automation](03-SOAR-Automation.md), including its implementation and validation status.
 
 
 ## 5. Detection and Incident Automation
@@ -282,7 +283,7 @@ A higher score indicates that more configured suspicious indicators were observe
 
 VirusTotal reputation results provide additional investigation context but do not currently modify the behavioral risk score.
 
-The complete scoring KQL, field mappings, and implementation details are documented separately in `04-Risk-Scoring.md`.
+The complete scoring KQL, field mappings, and implementation details are documented separately in [04 — Risk Scoring](04-Risk-Scoring.md).
 
 
 ## 7. Threat Intelligence Enrichment
@@ -358,7 +359,7 @@ VirusTotal reputation data is contextual intelligence. Zero malicious detections
 
 The current implementation does not automatically isolate endpoints, block indicators, or modify its behavioral risk score based on VirusTotal results.
 
-Detailed API configuration, Key Vault integration, and enrichment expressions are documented separately in `05-Threat-Intelligence.md`.
+Detailed API configuration, Key Vault integration, and enrichment expressions are documented separately in [05 — Threat Intelligence](05-Threat-Intelligence.md).
 
 
 ## 8. Investigation Report Generation
@@ -425,7 +426,8 @@ The successful end-to-end execution and final enriched investigation report are 
 - [Figure 29 — End-to-End Automation Success](../screenshots/29-CERBERUS-End-to-End-Automation-Success.PNG)
 - [Figure 30 — Final Enriched Investigation Report](../screenshots/30-CERBERUS-Final-Enriched-Investigation-Report.PNG)
 
-Detailed report validation and test methodology are maintained in `07-Validation.md`.
+
+Detailed report validation and test methodology are maintained in [07 — Validation](07-Validation.md).
 
 
 ## 9. Architecture Diagram
