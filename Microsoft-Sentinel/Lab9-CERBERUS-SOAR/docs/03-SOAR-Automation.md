@@ -272,7 +272,9 @@ The scoring logic evaluates configured behavioral indicators and assigns a weigh
 | Network connection using an unusual destination port | +20 |
 | Recognized routine Microsoft Defender activity | -40 |
 
-The raw score is constrained to a range of 0–100.
+The scoring logic first calculates `RawRiskScore` by combining the configured positive and negative indicator weights. It then produces `RiskScore` by clamping the raw result to the range `0–100` using `max_of(0, min_of(100, RawRiskScore))`.
+
+This prevents negative final scores and establishes consistent bounds for downstream risk classification.
 
 The unusual-port indicator applies when a destination port is present and is not `80`, `443`, or `53`.
 
@@ -492,11 +494,11 @@ The routing structure provides separate branches for:
 - High
 - Critical
 
-These branches establish a foundation for differentiated incident handling based on classification.
+These configured branches provide a foundation for differentiated incident handling. The severity-based `Switch` action is distinct from the KQL-derived behavioral risk classification described in Section 6.
 
-The November 4, 2026 end-to-end validation did not independently demonstrate successful execution of every severity-routing case.
+The behavioral risk score determines whether conditional threat intelligence enrichment is performed; it does not automatically change the Microsoft Sentinel incident severity.
 
-The presence of configured branches should not be interpreted as proof that all routing paths were exercised or validated.
+The final validation demonstrated successful execution of the overall workflow, but did not independently establish the behavior of each individual severity-routing case.
 
 ### Successful End-to-End Execution
 
@@ -546,6 +548,19 @@ The following screenshots preserve the successful execution and generated report
 ![CERBERUS final enriched investigation report](../screenshots/30-CERBERUS-Final-Enriched-Investigation-Report.PNG)
 
 *Structured report output containing behavioral risk assessment, VirusTotal reputation context, and analyst guidance.*
+
+
+### Supporting Workflow Evidence
+
+Additional implementation screenshots are available in [01 — System Architecture & Design](01-Architecture.md):
+
+- **Figure 31 — Incident Ingestion Workflow:** Incident payload processing and endpoint identification.
+- **Figure 32 — Endpoint Investigation Workflow:** Process hunting, behavioral analysis, and network investigation.
+- **Figure 33 — Risk Assessment Workflow:** Process-to-network correlation, risk evaluation, and severity-routing configuration.
+- **Figure 34 — Conditional Threat Intelligence Workflow:** Key Vault retrieval, VirusTotal enrichment, and conditional execution.
+
+These screenshots document the configured Logic App components. Figures 29 and 30 provide the primary evidence of successful end-to-end execution and report generation.
+
 
 ### Validation Boundaries
 
