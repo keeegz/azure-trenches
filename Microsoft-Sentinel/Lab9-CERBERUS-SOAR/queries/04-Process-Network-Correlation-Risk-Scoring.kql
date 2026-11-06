@@ -1,0 +1,69 @@
+
+// CERBERUS — Process/Network Correlation & Behavioral Risk Scoring
+// Platform: Microsoft Defender XDR Advanced Hunting
+// Purpose: Correlate PowerShell process execution with network
+// activity and calculate a deterministic behavioral risk score.
+//
+// Adapted for standalone analyst hunting.
+// The production-style Logic App expression is replaced with
+// a configurable lab endpoint identifier.
+// This standalone adaptation has not been independently validated.
+
+let TargetDevice = "nyc-cl11";
+let Lookback = 7d;
+
+DeviceNetworkEvents
+| where Timestamp > ago(Lookback)
+| where DeviceName =~ TargetDevice
+| where InitiatingProcessFileName =~ "powershell.exe"
+| join kind=inner (
+    DeviceProcessEvents
+    | where Timestamp > ago(Lookback)
+    | where FileName =~ "powershell.exe"
+    | project
+        DeviceId,
+        ProcessId,
+        ProcessCreationTime,
+        ProcessCommandLine,
+        AccountName
+)
+on DeviceId,
+   $left.InitiatingProcessId == $right.ProcessId,
+   $left.InitiatingProcessCreationTime == $right.ProcessCreationTime
+| project
+    NetworkTimestamp = Timestamp,
+    DeviceName,
+    InitiatingProcessId,
+    ProcessCommandLine,
+    AccountName,
+    RemoteUrl,
+    RemoteIP,
+    RemotePort,
+    ActionType
+| extend HasEncodedCommand =
+    ProcessCommandLine contains "-EncodedCommand"
+    or ProcessCommandLine contains "-enc "
+| extend HasDownloadExecution =
+    ProcessCommandLine contains "DownloadString"
+    or ProcessCommandLine contains "Invoke-Expression"
+    or ProcessCommandLine contains "IEX("
+| extend HasUnusualDestination =
+    RemotePort !in (80, 443, 53)
+    and isnotnull(RemotePort)
+| extend IsRoutineDefenderTraffic =
+    RemoteUrl contains "winatp-gw"
+    or ProcessCommandLine contains "DataCollection.ps1"
+| extend RawRiskScore =
+    iff(HasEncodedCommand, 25, 0)
+    + iff(HasDownloadExecution, 25, 0)
+    + iff(HasUnusualDestination, 20, 0)
+    - iff(IsRoutineDefenderTraffic, 40, 0)
+| extend RiskScore = max_of(0, min_of(100, RawRiskScore))
+| extend RiskLevel = case(
+    RiskScore >= 70, "Critical",
+    RiskScore >= 50, "High",
+    RiskScore >= 25, "Medium",
+    "Low"
+)
+| order by RiskScore desc, NetworkTimestamp desc
+| take 50
