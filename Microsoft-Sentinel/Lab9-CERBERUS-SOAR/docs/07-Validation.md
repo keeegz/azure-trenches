@@ -436,3 +436,137 @@ The validation supports successful execution of the observed investigation path,
 Detailed correlation fields and scoring expressions are documented in [04 — Behavioral Risk Scoring & KQL](04-Risk-Scoring.md).
 
 The investigation workflow and action sequence are documented in [03 — SOAR Automation & Logic Apps](03-SOAR-Automation.md).
+
+
+
+## 6. Threat Intelligence & Investigation Report Validation
+
+### Validation Objective
+
+This stage evaluated whether CERBERUS could conditionally enrich a correlated network indicator using VirusTotal, securely retrieve the required API credential from Azure Key Vault, and incorporate the resulting intelligence into a structured investigation report.
+
+### Enrichment Decision
+
+CERBERUS used the following conditions to determine whether threat intelligence enrichment should execute:
+
+- Behavioral risk score greater than or equal to `25`.
+- A nonempty remote IP address available for investigation.
+
+The final controlled test produced:
+
+| Evaluation Field | Observed Value |
+|---|---|
+| Behavioral risk score | `25` |
+| Risk classification | Medium |
+| Remote IP | `104.20.23.154` |
+| Enrichment threshold | `25` |
+| Enrichment decision | Eligible |
+
+The selected result satisfied the configured enrichment conditions.
+
+### Azure Key Vault Validation
+
+The workflow used Azure Key Vault to retrieve the credential required for the VirusTotal API request.
+
+During the successful November 4 execution, the credential retrieval action completed successfully.
+
+This validated the configured secret retrieval path for the observed test.
+
+The API credential was not included in the final investigation report.
+
+### VirusTotal Enrichment Results
+
+CERBERUS queried VirusTotal for the selected remote IP address:
+
+`104.20.23.154`
+
+The resulting reputation statistics were:
+
+| VirusTotal Classification | Detection Count |
+|---|---:|
+| Malicious | 0 |
+| Suspicious | 0 |
+| Harmless | 55 |
+| Undetected | 37 |
+
+The VirusTotal request and subsequent enrichment processing completed successfully during the observed execution.
+
+These statistics reflect the returned reputation data at the time of the test.
+
+Zero malicious detections do not establish that an indicator is safe or that the associated endpoint activity is benign.
+
+### Structured Investigation Report
+
+CERBERUS generated a structured JSON investigation report combining behavioral risk assessment, external threat intelligence, and analyst-oriented recommendations.
+
+The validated report included the following fields:
+
+```json
+{
+  "BehavioralRiskAssessment": {
+    "RiskScore": 25,
+    "RiskLevel": "Medium",
+    "RemoteIP": "104.20.23.154",
+    "Status": "Evaluated"
+  },
+  "ThreatIntelligence": {
+    "Provider": "VirusTotal",
+    "Indicator": "104.20.23.154",
+    "MaliciousDetections": 0,
+    "SuspiciousDetections": 0,
+    "HarmlessDetections": 55,
+    "UndetectedDetections": 37
+  },
+  "AnalystAssessment": {
+    "Disposition": "Pending analyst review",
+    "RecommendedAction": "Review collected evidence before containment"
+  }
+}
+```
+
+The report preserved a human-review disposition rather than asserting confirmed malicious activity or initiating automatic containment.
+
+### Validation Results
+
+| Validation Objective | Observed Result | Status |
+|---|---|---|
+| Evaluate enrichment conditions | Score `25` and remote IP satisfied conditions | Passed |
+| Retrieve API credential | Azure Key Vault action succeeded | Passed |
+| Request IP reputation | VirusTotal API action succeeded | Passed |
+| Extract reputation statistics | Expected classification counts populated | Passed |
+| Generate investigation report | Structured JSON report produced | Passed |
+| Preserve analyst review | Report recommended review before containment | Passed |
+| Handle VirusTotal API failures | Not independently tested | Not tested |
+| Handle Key Vault retrieval failures | Not independently tested | Not tested |
+
+### Validation Evidence
+
+The following screenshots document the observed workflow execution and investigation output.
+
+**Figure 29 — Successful CERBERUS End-to-End Automation Execution**
+
+![CERBERUS successful automation execution](../screenshots/29-CERBERUS-End-to-End-Automation-Success.PNG)
+
+**Figure 30 — Final Enriched Investigation Report**
+
+![CERBERUS final enriched investigation report](../screenshots/30-CERBERUS-Final-Enriched-Investigation-Report.PNG)
+
+**Figure 34 — Conditional Threat Intelligence Workflow**
+
+![CERBERUS conditional threat intelligence workflow](../screenshots/34-CERBERUS-Conditional-Threat-Intelligence.PNG)
+
+### Validation Interpretation
+
+The successful execution demonstrated the configured conditional enrichment path for a Medium-risk correlated endpoint event.
+
+CERBERUS retrieved the required credential, queried VirusTotal, processed the returned statistics, and incorporated the results into a structured investigation report.
+
+The observed validation supports successful execution of this specific enrichment path.
+
+It does not establish reliability during credential retrieval failures, API rate limiting, malformed responses, or other external service errors.
+
+### Related Documentation
+
+See [05 — Threat Intelligence](05-Threat-Intelligence.md) for integration design, credential handling, and enrichment limitations.
+
+See [03 — SOAR Automation](03-SOAR-Automation.md) for the corresponding Logic App workflow.
