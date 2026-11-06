@@ -569,4 +569,113 @@ It does not establish reliability during credential retrieval failures, API rate
 
 See [05 — Threat Intelligence](05-Threat-Intelligence.md) for integration design, credential handling, and enrichment limitations.
 
+
+## 7. Final Validation Summary & Remaining Test Coverage
+
+### Validation Summary
+
+The November 4, 2026 controlled test demonstrated successful execution of the CERBERUS investigation workflow across Microsoft Defender XDR, Microsoft Sentinel incident context, Azure Logic Apps, KQL behavioral analysis, Azure Key Vault, and VirusTotal.
+
+The validation began with benign encoded PowerShell activity and concluded with a structured investigation report containing behavioral risk and external reputation data.
+
+### End-to-End Validation Matrix
+
+| Validation Stage | Observed Outcome | Status |
+|---|---|---|
+| Controlled endpoint simulation | Benign encoded PowerShell activity executed | Passed |
+| Endpoint telemetry collection | Matching process/network activity observed | Passed |
+| Defender XDR custom detection | Expected alert generated | Passed |
+| Incident correlation | Alert associated with incident `2471` | Passed |
+| Sentinel incident processing | Expected incident context processed by Logic App | Passed |
+| Automation-rule attribution | Initiating Sentinel rule not independently confirmed | Not verified |
+| Process/network investigation | Correlated behavior evaluated | Passed |
+| Behavioral risk scoring | Score `25`, Medium | Passed |
+| Conditional enrichment | Enrichment conditions satisfied | Passed |
+| Azure Key Vault | Secret retrieval succeeded | Passed |
+| VirusTotal API | Reputation data retrieved | Passed |
+| Investigation report | Structured JSON report generated | Passed |
+| Automatic endpoint containment | Not implemented | Not applicable |
+| Human approval enforcement | Not implemented | Not applicable |
+
+### Confirmed Investigation Outcome
+
+The final controlled investigation produced the following results:
+
+| Field | Validated Result |
+|---|---|
+| Test date | November 4, 2026 |
+| Endpoint | `nyc-cl11` |
+| Incident ID | `2471` |
+| Detection | `CERBERUS-FINAL-TEST - Encoded PowerShell Network Activity` |
+| Logic App | `la-cerberus-soc-triage` |
+| Execution status | Succeeded |
+| Execution duration | 7.92 seconds |
+| Behavioral risk score | 25 |
+| Risk classification | Medium |
+| Enriched IP | `104.20.23.154` |
+| VirusTotal malicious detections | 0 |
+| VirusTotal suspicious detections | 0 |
+| Final disposition | Pending analyst review |
+
+### Remaining Validation Gaps
+
+The following scenarios require additional testing before CERBERUS could be considered production-ready.
+
+| Test Scenario | Current Coverage |
+|---|---|
+| New incident creation and automation | Not independently validated end to end |
+| Incident-update rule attribution | Not independently confirmed |
+| Low-severity routing | Not independently validated |
+| High-severity routing | Not independently validated |
+| Critical-severity routing | Not independently validated |
+| Multiple correlated endpoint events | Incident-wide aggregation not implemented |
+| VirusTotal API errors or rate limiting | Not tested |
+| Azure Key Vault access failures | Not tested |
+| Missing or malformed telemetry | Not comprehensively tested |
+| Logic App retries and timeout recovery | Not comprehensively tested |
+| Automated endpoint isolation | Not implemented |
+| Enforced analyst approval | Not implemented |
+
+### Engineering Assessment
+
+CERBERUS successfully demonstrated a controlled, automated security investigation pipeline.
+
+The project provides practical evidence of integration across endpoint detection, incident processing, KQL-based correlation, deterministic behavioral scoring, conditional threat intelligence enrichment, and structured reporting.
+
+However, a successful controlled test does not establish production readiness.
+
+Further validation would be required for error handling, alert correlation edge cases, rule attribution, severity routing, credential failures, and operational reliability.
+
+### Future Validation Priorities
+
+Recommended next validation activities include:
+
+1. Independently validate incident-creation and incident-update automation triggers.
+2. Exercise each configured severity-routing branch.
+3. Test missing endpoint identifiers and empty KQL results.
+4. Simulate VirusTotal API failures and rate-limit responses.
+5. Validate Key Vault permission and secret retrieval failure handling.
+6. Test multiple correlated events and evaluate incident-level risk aggregation.
+7. Introduce structured error handling and recovery paths.
+8. Evaluate analyst approval gates before any future containment capability.
+
+### Final Conclusion
+
+The November 4 validation established that CERBERUS could execute its intended controlled investigation path and generate an enriched, analyst-oriented report.
+
+The project demonstrates hands-on security engineering involving Microsoft Defender XDR, Microsoft Sentinel, Azure Logic Apps, KQL, Azure Key Vault, and external threat intelligence.
+
+The documented limitations provide a foundation for future testing and improvements without overstating the maturity or security guarantees of the current implementation.
+
+### Related Documentation
+
+- [01 — Architecture](01-Architecture.md)
+- [02 — Detection Engineering](02-Detection-Engineering.md)
+- [03 — SOAR Automation](03-SOAR-Automation.md)
+- [04 — Risk Scoring](04-Risk-Scoring.md)
+- [05 — Threat Intelligence](05-Threat-Intelligence.md)
+- [06 — Troubleshooting](06-Troubleshooting.md)
+- [08 — Security and Limitations](08-Security-and-Limitations.md)
+
+
 See [03 — SOAR Automation](03-SOAR-Automation.md) for the corresponding Logic App workflow.
