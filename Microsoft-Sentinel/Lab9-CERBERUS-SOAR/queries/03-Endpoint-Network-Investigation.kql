@@ -1,0 +1,37 @@
+// CERBERUS — Endpoint Network Investigation
+// Platform: Microsoft Defender XDR Advanced Hunting
+// Purpose: Investigate outbound network connections initiated
+// by PowerShell and identify relevant network indicators.
+// Usage: Standalone analyst hunting query.
+// Note: Adapted for standalone use; not an exact Logic App export.
+
+let TargetDevice = "nyc-cl11";
+let Lookback = 7d;
+
+DeviceNetworkEvents
+| where Timestamp > ago(Lookback)
+| where DeviceName =~ TargetDevice
+| where InitiatingProcessFileName =~ "powershell.exe"
+| project
+    Timestamp,
+    DeviceId,
+    DeviceName,
+    InitiatingProcessId,
+    InitiatingProcessCreationTime,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    RemoteUrl,
+    RemoteIP,
+    RemotePort,
+    Protocol,
+    ActionType
+| extend HasEncodedCommand =
+    InitiatingProcessCommandLine contains "-EncodedCommand"
+    or InitiatingProcessCommandLine contains "-enc "
+| extend HasUnusualDestination =
+    isnotnull(RemotePort)
+    and RemotePort !in (80, 443, 53)
+| extend IsRoutineDefenderTraffic =
+    RemoteUrl contains "winatp-gw"
+    or InitiatingProcessCommandLine contains "DataCollection.ps1"
+| order by Timestamp desc
