@@ -348,3 +348,459 @@ However, data protection extends beyond credential management.
 A production implementation must also account for telemetry sensitivity, workflow execution history, external data sharing, repository hygiene, access controls, and retention requirements.
 
 These safeguards should be validated before the system processes confidential organizational incidents.
+
+
+## 5. Human Oversight, Automated Response & Safety Boundaries
+
+### Security Objective
+
+CERBERUS automates security investigation activities, including endpoint telemetry retrieval, behavioral analysis, risk scoring, and external threat intelligence enrichment.
+
+However, automated investigation results do not necessarily establish that an endpoint is compromised.
+
+The objective is to preserve human oversight of consequential response decisions while reducing the time required to collect and evaluate relevant evidence.
+
+### Investigation Versus Response
+
+CERBERUS currently focuses on automated investigation and reporting rather than autonomous endpoint containment.
+
+| Capability | Current Implementation |
+|---|---|
+| Incident context processing | Implemented and validated |
+| Endpoint telemetry investigation | Implemented and validated |
+| Behavioral risk scoring | Implemented and validated for controlled test |
+| Conditional threat intelligence enrichment | Implemented and validated |
+| Structured investigation report | Implemented and validated |
+| Analyst review recommendation | Included in report |
+| Enforced analyst approval workflow | Not implemented |
+| Automatic endpoint isolation | Not implemented |
+| Automatic account disablement | Not implemented |
+| Autonomous remediation | Not implemented |
+
+The workflow provides investigation findings to support analyst decision-making.
+
+It does not independently execute destructive or disruptive response actions.
+
+### Analyst Review Requirement
+
+The validated investigation report included:
+
+```json
+{
+  "AnalystAssessment": {
+    "Disposition": "Pending analyst review",
+    "RecommendedAction": "Review collected evidence before containment"
+  }
+}
+```
+
+This output communicates that the investigation requires human evaluation before any containment decision.
+
+Importantly, this is a recommendation recorded in the report.
+
+It is not an enforced approval mechanism or a technical control preventing other systems from taking action.
+
+### False Positive Considerations
+
+The final controlled simulation produced a behavioral risk score of `25`, resulting in a Medium classification.
+
+The simulation was intentionally benign.
+
+This demonstrates that the behavioral scoring system identifies configured activity patterns rather than proving malicious intent.
+
+Potential false-positive scenarios include:
+
+- Legitimate administrative PowerShell automation.
+- Authorized scripts using encoded command arguments.
+- Routine software deployment activity.
+- Approved connections to unfamiliar network destinations.
+- Security tooling that generates unusual process or network telemetry.
+
+Behavioral scores should therefore be interpreted alongside incident context, asset criticality, user activity, and additional investigation evidence.
+
+### Threat Intelligence Limitations
+
+VirusTotal enrichment provides reputation statistics for a selected indicator.
+
+The final validation returned:
+
+- Malicious detections: `0`
+- Suspicious detections: `0`
+- Harmless detections: `55`
+- Undetected detections: `37`
+
+These results do not establish that the observed activity was safe.
+
+External reputation information can be incomplete, outdated, or unrelated to the specific behavior being investigated.
+
+Similarly, a malicious reputation result does not independently establish that the endpoint is compromised.
+
+Threat intelligence should supplement behavioral evidence rather than replace analyst judgment.
+
+### Risks of Autonomous Containment
+
+Automatically isolating an endpoint or disabling an account based solely on a behavioral score could introduce operational risks.
+
+Examples include:
+
+1. Interrupting critical business services.
+2. Isolating an endpoint during legitimate administrative activity.
+3. Disabling an account required for essential operations.
+4. Triggering containment based on incomplete or stale telemetry.
+5. Acting on an incorrectly correlated process or network event.
+6. Escalating a false positive into a business disruption.
+
+These risks become more significant when automation operates with elevated privileges.
+
+### Recommended Approval Architecture
+
+Before implementing automated containment, CERBERUS should introduce an explicit approval stage.
+
+A proposed future workflow would follow:
+
+1. Generate and correlate investigation evidence.
+2. Calculate behavioral risk.
+3. Enrich relevant indicators.
+4. Produce an analyst-readable investigation summary.
+5. Request approval from an authorized responder.
+6. Validate the approval decision and target identity.
+7. Execute only the specifically approved response action.
+8. Record the decision, execution outcome, and audit evidence.
+
+Additional safeguards should include approval expiration, authorization checks, duplicate-action prevention, and clear handling of rejected or timed-out requests.
+
+This approval architecture is a future enhancement and has not been implemented or validated in the current lab.
+
+### Safety Validation Summary
+
+| Safety Control | Current Status |
+|---|---|
+| Benign controlled simulation | Validated |
+| Behavioral scoring | Validated for observed scenario |
+| Threat intelligence enrichment | Validated for observed scenario |
+| Human-review recommendation | Present in final report |
+| Enforced approval before containment | Not implemented |
+| Automated endpoint isolation | Not implemented |
+| Automated account disablement | Not implemented |
+| Response authorization validation | Not tested |
+| Containment rollback procedure | Not implemented |
+| Response audit trail | Not validated |
+
+### Security Assessment
+
+CERBERUS demonstrates automated evidence collection and investigation while leaving consequential response decisions outside the current automation scope.
+
+This reduces the risk of unintended disruption from an unvalidated containment mechanism.
+
+However, the absence of automatic containment does not independently guarantee that the investigation workflow is secure.
+
+Further hardening should address authorization, data protection, workflow reliability, error handling, and explicit human approval before expanding CERBERUS into automated remediation.
+
+
+## 6. Failure Handling, Operational Reliability & Production Limitations
+
+### Security Objective
+
+Security automation must remain reliable when telemetry is incomplete, external services are unavailable, credentials cannot be retrieved, or workflow actions fail.
+
+A successful investigation under controlled conditions does not guarantee consistent behavior across production incidents.
+
+The objective is to identify CERBERUS operational failure scenarios, document observed reliability evidence, and establish priorities for future hardening.
+
+### Observed HTTP 504 Troubleshooting
+
+During development, CERBERUS encountered HTTP 504 errors while testing Logic App execution.
+
+These errors complicated workflow validation and required investigation of the execution path.
+
+Subsequent testing produced a successful end-to-end Logic App run on November 4, 2026.
+
+| Observation | Recorded Outcome |
+|---|---|
+| Development issue | HTTP 504 errors encountered |
+| Troubleshooting performed | Workflow execution and action behavior investigated |
+| Confirmed root cause | Not conclusively established |
+| Subsequent validation | Successful Logic App execution |
+| Final run duration | 7.92 seconds |
+| Final run status | Succeeded |
+
+The successful final execution demonstrates that the observed investigation path completed during the controlled test.
+
+It does not establish that the original timeout condition was permanently resolved or that the workflow will consistently meet production reliability requirements.
+
+### Potential Failure Scenarios
+
+The following conditions should be evaluated before CERBERUS is deployed in a production environment:
+
+| Failure Scenario | Potential Impact |
+|---|---|
+| Missing Defender device identifier | Investigation cannot reliably identify the target endpoint |
+| Empty KQL query results | Insufficient telemetry for behavioral assessment |
+| Incorrect process/network correlation | Risk assessment may reference unrelated activity |
+| Sentinel incident correlation changes | Automation conditions may fail to match |
+| Logic App action timeout | Investigation may terminate or remain incomplete |
+| Key Vault access failure | External enrichment credential unavailable |
+| VirusTotal API rate limiting | Reputation enrichment delayed or unavailable |
+| Malformed external API response | Reputation fields may not be populated correctly |
+| Missing remote IP | Enrichment condition cannot be satisfied |
+| Duplicate workflow execution | Repeated investigation or unnecessary API requests |
+| Connector authorization failure | Required investigation actions may fail |
+
+These represent potential operational risks rather than a list of failures observed during the final validation.
+
+### Sentinel Automation Reliability
+
+CERBERUS testing demonstrated that new Defender XDR alerts may be correlated into existing incidents.
+
+This behavior affects Microsoft Sentinel automation rules configured to trigger only when incidents are created.
+
+The original controlled automation rule expected a newly created incident with a specific title.
+
+The observed alert was instead added to existing incident `2471`, which retained a generic incident title.
+
+A separate incident-update validation rule was configured to address this behavior.
+
+Although the final Logic App execution processed the expected incident context, the available evidence does not independently establish which automation rule initiated that execution.
+
+Future validation should confirm rule execution attribution and test both incident creation and update scenarios.
+
+### KQL Investigation Reliability
+
+CERBERUS uses process-to-network correlation to evaluate endpoint behavior.
+
+The investigation relies on matching endpoint identifiers, process identifiers, and process creation timestamps.
+
+Potential limitations include:
+
+- Delayed or missing endpoint telemetry.
+- Process events that cannot be matched to network events.
+- Multiple correlated events within the investigation window.
+- Incomplete command-line information.
+- Differences between endpoint event timestamps.
+- Empty query results.
+- Unrelated activity appearing in the same incident context.
+
+The current risk assessment selects the highest-ranked correlated result rather than calculating an incident-wide aggregate score.
+
+This design should be considered when interpreting investigations containing multiple devices, processes, or alerts.
+
+### External Dependency Reliability
+
+CERBERUS depends on Azure Key Vault and VirusTotal for the observed enrichment path.
+
+External dependencies introduce additional failure conditions, including authentication errors, permission changes, network interruptions, service availability issues, and API usage limits.
+
+A hardened implementation should:
+
+1. Distinguish enrichment failure from a clean reputation result.
+2. Record the reason an enrichment request failed or was skipped.
+3. Apply bounded retries with appropriate backoff where supported.
+4. Avoid exposing credentials in error messages.
+5. Prevent failed API calls from producing misleading reputation statistics.
+6. Continue producing a clearly labeled partial investigation report when appropriate.
+7. Alert an operator when required investigation components repeatedly fail.
+
+These behaviors are recommended future controls and have not been comprehensively validated in the current implementation.
+
+### Recommended Error Handling Architecture
+
+A future hardened CERBERUS workflow should separate successful investigation processing from failure and recovery paths.
+
+A proposed approach would include:
+
+1. **Investigation scope:** Retrieve incident and endpoint evidence.
+2. **Validation scope:** Confirm required identifiers and telemetry are present.
+3. **Enrichment scope:** Execute permitted external lookups.
+4. **Failure handling scope:** Capture action failures and relevant diagnostics.
+5. **Recovery logic:** Retry eligible transient failures within defined limits.
+6. **Reporting scope:** Produce a complete or explicitly partial investigation report.
+7. **Notification scope:** Inform authorized operators when manual intervention is required.
+
+Failure handling should preserve sufficient evidence for troubleshooting without unnecessarily exposing sensitive data.
+
+### Operational Validation Status
+
+| Reliability Control | Current Status |
+|---|---|
+| Successful controlled Logic App execution | Validated |
+| Incident context processing | Validated |
+| Behavioral scoring | Validated for controlled scenario |
+| Conditional VirusTotal enrichment | Validated |
+| HTTP 504 root-cause identification | Not conclusively established |
+| Automated retry and recovery behavior | Not comprehensively tested |
+| Empty KQL result handling | Not comprehensively tested |
+| Key Vault failure recovery | Not tested |
+| VirusTotal failure recovery | Not tested |
+| Duplicate execution prevention | Not validated |
+| All severity-routing branches | Not independently validated |
+| Production monitoring and alerting | Not validated |
+| Sustained reliability under load | Not tested |
+
+### Production Readiness Assessment
+
+CERBERUS demonstrates a functional controlled investigation pipeline.
+
+However, production readiness requires more than one successful execution.
+
+Before production deployment, the workflow would require additional testing of failure handling, identity permissions, telemetry edge cases, automation triggers, API dependencies, monitoring, and operational recovery.
+
+The current implementation should therefore be treated as a security engineering lab and portfolio demonstration rather than a production-ready SOAR platform.
+
+### Related Documentation
+
+See [06 — Troubleshooting](06-Troubleshooting.md) for documented development issues and engineering lessons.
+
+See [07 — Validation](07-Validation.md) for the observed end-to-end test results and remaining validation gaps.
+
+
+## 7. Security Hardening Roadmap & Final Engineering Assessment
+
+### Security Hardening Overview
+
+CERBERUS successfully demonstrated a controlled security investigation workflow integrating Microsoft Defender XDR, Microsoft Sentinel, Azure Logic Apps, KQL, Azure Key Vault, and VirusTotal.
+
+The project also identified security and operational limitations that should be addressed before production deployment.
+
+The following roadmap prioritizes improvements based on their potential impact on security, reliability, and operational safety.
+
+### Phase 1 — Identity & Credential Hardening
+
+**Priority: High**
+
+Recommended activities:
+
+1. Review Azure RBAC assignments associated with the workflow.
+2. Verify least-privilege permissions for all connected services.
+3. Review managed identity usage and connector authentication.
+4. Restrict Key Vault secret access to authorized identities.
+5. Protect sensitive Logic App inputs and outputs.
+6. Review public repository content for exposed credentials.
+7. Establish credential rotation and access review procedures.
+
+**Expected outcome:** Reduced credential exposure and unnecessary authorization privileges.
+
+### Phase 2 — Reliability & Error Handling
+
+**Priority: High**
+
+Recommended activities:
+
+1. Introduce structured failure-handling scopes.
+2. Validate required incident and device identifiers.
+3. Handle empty KQL results explicitly.
+4. Implement appropriate retry and backoff policies.
+5. Handle VirusTotal API errors and rate limits.
+6. Handle Key Vault authentication and retrieval failures.
+7. Distinguish failed enrichment from clean reputation results.
+8. Introduce monitoring for failed or incomplete investigations.
+
+**Expected outcome:** More predictable workflow behavior during dependency failures and incomplete investigations.
+
+### Phase 3 — Detection & Risk Model Improvements
+
+**Priority: Medium**
+
+Recommended activities:
+
+1. Expand testing across multiple process and network events.
+2. Evaluate incident-level risk aggregation.
+3. Introduce additional behavioral indicators.
+4. Review scoring weights against known benign and suspicious activity.
+5. Evaluate false-positive and false-negative scenarios.
+6. Validate process-to-network correlation edge cases.
+7. Exercise Low, Medium, High, and Critical routing paths.
+
+**Expected outcome:** Improved investigation coverage and more meaningful behavioral risk assessments.
+
+### Phase 4 — Analyst Approval & Controlled Response
+
+**Priority: High before implementing containment**
+
+Recommended activities:
+
+1. Design an explicit analyst approval workflow.
+2. Require authorization before consequential response actions.
+3. Validate the endpoint or account targeted for containment.
+4. Introduce approval expiration and rejection handling.
+5. Record analyst decisions and response execution results.
+6. Implement safeguards against duplicate response actions.
+7. Establish containment rollback and recovery procedures.
+8. Test response actions in an isolated environment before broader deployment.
+
+**Expected outcome:** Controlled response capabilities with stronger human oversight and operational safeguards.
+
+### Phase 5 — Production Monitoring & Governance
+
+**Priority: High before production deployment**
+
+Recommended activities:
+
+1. Define operational monitoring and alerting requirements.
+2. Establish appropriate diagnostic logging and retention policies.
+3. Review external threat intelligence data-sharing requirements.
+4. Establish workflow change control and version management.
+5. Define ownership for incident investigation and automation maintenance.
+6. Conduct security and privacy reviews.
+7. Test operational recovery and dependency failures.
+8. Establish measurable reliability and performance objectives.
+
+**Expected outcome:** Improved accountability, maintainability, and operational readiness.
+
+### Hardening Priority Matrix
+
+| Security Area | Current State | Priority |
+|---|---|---|
+| Credential retrieval | Key Vault integration validated | High — review access and output protection |
+| Identity permissions | Functional access demonstrated | High — verify least privilege |
+| Sensitive telemetry handling | Controlled lab data processed | High — validate protection controls |
+| Error handling | Limited failure-path validation | High |
+| Incident automation | Successful incident processing observed | High — verify rule attribution |
+| Behavioral scoring | Controlled scenario validated | Medium |
+| Severity routing | Configured; branches not fully validated | Medium |
+| Human approval | Recommendation only | High before containment |
+| Automated containment | Not implemented | Future enhancement |
+| Production monitoring | Not comprehensively validated | High |
+
+### Final Engineering Assessment
+
+CERBERUS demonstrates practical security engineering across detection, investigation, orchestration, behavioral analysis, and threat intelligence enrichment.
+
+The successful November 4, 2026 validation established that the workflow could process controlled endpoint activity and generate an enriched investigation report.
+
+The final observed investigation included:
+
+- Defender XDR alert correlation with incident `2471`.
+- Successful Logic App execution in `7.92 seconds`.
+- Correlated endpoint process and network telemetry.
+- Behavioral risk score of `25`, classified as Medium.
+- Conditional VirusTotal enrichment for `104.20.23.154`.
+- Structured reporting with a pending analyst-review disposition.
+
+These results support the project's demonstrated functionality within the controlled lab.
+
+They do not establish production readiness, comprehensive threat detection, autonomous response safety, or reliability across all operational scenarios.
+
+### Final Security Conclusion
+
+CERBERUS was developed as a hands-on security engineering and SOAR automation project.
+
+Its value lies in demonstrating the design, implementation, investigation, troubleshooting, and validation of a multi-service security workflow.
+
+Equally important, the project documents where its capabilities end.
+
+Future improvements should prioritize least privilege, sensitive-data protection, reliable error handling, stronger validation coverage, and explicit analyst authorization before implementing consequential response actions.
+
+The current implementation should be considered a controlled lab demonstration and a foundation for further security engineering development.
+
+### Related Documentation
+
+- [01 — Architecture](01-Architecture.md)
+- [02 — Detection Engineering](02-Detection-Engineering.md)
+- [03 — SOAR Automation](03-SOAR-Automation.md)
+- [04 — Risk Scoring](04-Risk-Scoring.md)
+- [05 — Threat Intelligence](05-Threat-Intelligence.md)
+- [06 — Troubleshooting](06-Troubleshooting.md)
+- [07 — Validation](07-Validation.md)
+
+Return to the [CERBERUS Project README](../README.md).
+
