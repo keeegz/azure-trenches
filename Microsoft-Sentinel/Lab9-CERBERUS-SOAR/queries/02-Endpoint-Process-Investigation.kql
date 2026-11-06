@@ -1,0 +1,34 @@
+// CERBERUS — Endpoint Process Investigation
+// Platform: Microsoft Defender XDR Advanced Hunting
+// Purpose: Investigate PowerShell process execution,
+// command-line arguments, parent processes, and account context.
+// Usage: Standalone analyst hunting query.
+// Note: Adapted for standalone use; not an exact Logic App export.
+
+let TargetDevice = "nyc-cl11";
+let Lookback = 7d;
+
+DeviceProcessEvents
+| where Timestamp > ago(Lookback)
+| where DeviceName =~ TargetDevice
+| where FileName =~ "powershell.exe"
+| project
+    Timestamp,
+    DeviceId,
+    DeviceName,
+    ProcessId,
+    ProcessCreationTime,
+    FileName,
+    ProcessCommandLine,
+    AccountName,
+    InitiatingProcessFileName,
+    InitiatingProcessCommandLine,
+    InitiatingProcessId
+| extend HasEncodedCommand =
+    ProcessCommandLine contains "-EncodedCommand"
+    or ProcessCommandLine contains "-enc "
+| extend HasDownloadExecution =
+    ProcessCommandLine contains "DownloadString"
+    or ProcessCommandLine contains "Invoke-Expression"
+    or ProcessCommandLine contains "IEX("
+| order by Timestamp desc
