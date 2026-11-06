@@ -1,0 +1,23 @@
+// CERBERUS — Encoded PowerShell Network Detection
+// Platform: Microsoft Defender XDR Advanced Hunting
+// Purpose: Identify encoded PowerShell execution with a
+// successful connection to the controlled test destination.
+// Environment: Controlled lab; not a general-purpose production detection.
+
+DeviceNetworkEvents
+| where Timestamp > ago(1h)
+| where DeviceName =~ "nyc-cl11"
+| where InitiatingProcessFileName =~ "powershell.exe"
+| where InitiatingProcessCommandLine contains "-EncodedCommand"
+| where RemoteUrl =~ "example.com"
+| where ActionType == "ConnectionSuccess"
+| project
+    Timestamp,
+    DeviceId,
+    DeviceName,
+    ReportId,
+    RemoteIP,
+    RemoteUrl,
+    RemotePort,
+    InitiatingProcessId,
+    InitiatingProcessCommandLine
