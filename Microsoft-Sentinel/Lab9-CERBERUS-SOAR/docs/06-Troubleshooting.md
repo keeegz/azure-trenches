@@ -435,3 +435,221 @@ Future development could include:
 - Testing correlation accuracy across multiple endpoints and process instances.
 
 The current correlation logic provides a useful foundation for automated endpoint investigation but requires broader validation before production deployment.
+
+
+
+## 6. Key Vault & VirusTotal Integration Troubleshooting
+
+### Integration Overview
+
+CERBERUS integrates Azure Key Vault and the VirusTotal API to enrich selected remote IP addresses with external reputation information.
+
+The enrichment workflow executes conditionally when:
+
+1. The behavioral risk score is greater than or equal to `25`.
+2. A nonempty remote IP address is available.
+
+When both conditions are satisfied, the Logic App enters the True branch and executes the credential retrieval and reputation enrichment actions.
+
+### Credential Retrieval Dependencies
+
+The first enrichment action is:
+
+`CERBERUS - Retrieve VirusTotal API Key`
+
+This action retrieves the VirusTotal API credential from Azure Key Vault.
+
+Successful retrieval depends on the configured connection, appropriate authorization, and availability of the requested secret.
+
+Potential failure conditions include:
+
+- Insufficient Key Vault permissions.
+- An incorrect or unavailable secret reference.
+- Expired or invalid connection credentials.
+- Key Vault connectivity or service errors.
+- Unexpected secret retrieval responses.
+
+These are potential troubleshooting scenarios, not confirmed failures from the final CERBERUS validation.
+
+### VirusTotal API Lookup Dependencies
+
+After retrieving the credential, CERBERUS executes:
+
+`CERBERUS - VirusTotal IP Reputation Lookup`
+
+The action requests reputation information for the selected remote IP address.
+
+Potential API-related failure conditions include:
+
+| Condition | Potential Impact |
+|---|---|
+| Invalid API credential | Authentication failure |
+| API rate limit exceeded | Request rejected or delayed |
+| Network connectivity failure | Reputation lookup cannot complete |
+| External service timeout | Lookup may fail or exceed configured limits |
+| Invalid or missing IP indicator | Lookup cannot target the intended indicator |
+| Unexpected API response structure | Downstream parsing or summarization may fail |
+
+The current implementation has not been comprehensively validated against these failure conditions.
+
+### Reputation Response Processing
+
+After the API lookup, CERBERUS executes:
+
+`CERBERUS - Summarize VirusTotal Reputation`
+
+This action extracts reputation statistics from the returned API response.
+
+The workflow subsequently executes:
+
+`CERBERUS - Set Threat Intelligence Result`
+
+This prepares the enrichment information for inclusion in the final investigation report.
+
+Response processing depends on the expected data fields being present and accessible.
+
+Malformed responses, missing properties, or unexpected data types could affect downstream report generation.
+
+### Troubleshooting Methodology
+
+If enrichment fails, the recommended investigation sequence is:
+
+1. Confirm that the behavioral risk threshold was satisfied.
+2. Verify that the selected remote IP address is present.
+3. Inspect which conditional branch executed.
+4. Check the Key Vault retrieval action status.
+5. Verify the Logic App's authorized access to the required secret.
+6. Examine the VirusTotal lookup action status and HTTP response.
+7. Review reputation summarization and result-setting actions.
+8. Confirm whether the final investigation report was generated.
+
+Sensitive credentials must not be exposed while inspecting or documenting workflow inputs and outputs.
+
+### Validated Successful Execution
+
+During the November 4, 2026 controlled validation, CERBERUS successfully executed the enrichment-enabled investigation path.
+
+| Component | Validated Result |
+|---|---|
+| Behavioral risk score | `25` |
+| Remote IP | `104.20.23.154` |
+| Enrichment condition | True |
+| Key Vault credential retrieval | Succeeded |
+| VirusTotal reputation lookup | Succeeded |
+| Reputation summarization | Succeeded |
+| Threat intelligence result preparation | Succeeded |
+| Final investigation report | Generated |
+
+The resulting report contained:
+
+- Malicious detections: `0`
+- Suspicious detections: `0`
+- Harmless detections: `55`
+- Undetected detections: `37`
+
+This confirms successful execution of the observed enrichment path, not comprehensive reliability under failure conditions.
+
+### Engineering Lessons Learned
+
+The integration highlights several important considerations:
+
+- External enrichment introduces dependencies beyond the Microsoft security environment.
+- Credential storage and credential access are separate security concerns.
+- Conditional enrichment can reduce unnecessary API requests.
+- Successful API communication does not establish the accuracy or completeness of reputation classifications.
+- Failure handling should prevent external enrichment problems from obscuring the underlying endpoint investigation.
+- Sensitive workflow inputs and outputs require deliberate protection.
+
+### Recommended Improvements
+
+Future development should include:
+
+- Explicit handling of Key Vault retrieval failures.
+- HTTP status-code-aware API error handling.
+- Rate-limit-aware retry policies.
+- Validation of expected response fields.
+- Safe fallback behavior when enrichment is unavailable.
+- Protection of sensitive run-history inputs and outputs.
+- Testing of failed, skipped, and successful enrichment paths.
+
+These improvements would strengthen the resilience of CERBERUS without treating external reputation information as definitive evidence of malicious activity.
+
+
+## 7. Troubleshooting Summary & Engineering Lessons Learned
+
+### Troubleshooting Summary
+
+CERBERUS development required troubleshooting across several interconnected security technologies.
+
+The most significant engineering challenges involved workflow execution errors, Microsoft Defender XDR incident correlation, Microsoft Sentinel automation conditions, and endpoint telemetry correlation.
+
+The troubleshooting process reinforced the importance of validating individual components before evaluating the complete detection-to-investigation pipeline.
+
+### Engineering Findings
+
+| Area | Key Finding | Engineering Implication |
+|---|---|---|
+| HTTP 504 errors | Workflow testing encountered timeout errors | Inspect execution history and distinguish observed failures from unverified root causes |
+| Defender XDR incident correlation | A new alert was grouped into existing incident `2471` | Do not assume every detection creates a new incident |
+| Sentinel automation rules | Incident creation and incident update conditions differ | Design automation around actual incident lifecycle behavior |
+| KQL correlation | Process-to-network correlation depends on matching identifiers and timestamps | Validate telemetry availability and join conditions |
+| Azure Key Vault | Credential retrieval succeeded during final validation | Verify permissions and protect sensitive workflow outputs |
+| VirusTotal API | Conditional reputation enrichment succeeded | Handle external dependencies and interpret reputation results cautiously |
+
+### Validated End-to-End Outcome
+
+On November 4, 2026, CERBERUS successfully completed a controlled investigation using Microsoft Defender XDR, Microsoft Sentinel, Azure Logic Apps, KQL, Azure Key Vault, and VirusTotal.
+
+The validated execution:
+
+1. Processed incident `2471` containing the expected custom detection alert.
+2. Retrieved and evaluated relevant endpoint investigation data.
+3. Produced a behavioral risk score of `25`, classified as Medium.
+4. Identified remote IP `104.20.23.154`.
+5. Executed the conditional VirusTotal enrichment branch.
+6. Generated a structured investigation report containing reputation statistics and analyst guidance.
+
+The successful Logic App execution completed in `7.92 seconds`.
+
+### Remaining Validation Gaps
+
+The final successful execution does not establish:
+
+- A definitive root cause for the earlier HTTP 504 errors.
+- Comprehensive reliability across all incident creation and update scenarios.
+- Successful handling of missing or inconsistent endpoint telemetry.
+- Resilience against external API failures or rate limits.
+- Complete validation of all configured severity-routing cases.
+- Production readiness or automated containment capability.
+
+### Final Engineering Lessons
+
+The CERBERUS troubleshooting experience demonstrated that:
+
+- Security automation depends on accurate data and reliable integration between systems.
+- Alert generation, incident correlation, and playbook execution must be validated separately.
+- Successful execution of one workflow path does not guarantee all paths are reliable.
+- KQL field mappings and correlation conditions directly influence investigation accuracy.
+- External threat intelligence should supplement behavioral evidence rather than replace analyst judgment.
+- Troubleshooting documentation should clearly distinguish observed evidence, hypotheses, and validated resolutions.
+
+### Related Documentation
+
+The system architecture is documented in [01 — System Architecture & Design](01-Architecture.md).
+
+The custom detection implementation is documented in [02 — Detection Engineering & KQL](02-Detection-Engineering.md).
+
+The incident automation and Logic App workflow are documented in [03 — SOAR Automation & Logic Apps](03-SOAR-Automation.md).
+
+The behavioral scoring model is documented in [04 — Behavioral Risk Scoring & KQL](04-Risk-Scoring.md).
+
+The VirusTotal and Key Vault integration is documented in [05 — Threat Intelligence & Key Vault Integration](05-Threat-Intelligence.md).
+
+### Engineering Conclusion
+
+CERBERUS progressed from iterative troubleshooting to a successful controlled detection-to-investigation workflow.
+
+The project demonstrates practical experience investigating Microsoft security telemetry, troubleshooting Sentinel automation conditions, correlating endpoint activity using KQL, and validating Azure Logic Apps execution.
+
+The resulting lessons provide a foundation for improving workflow resilience, expanding detection coverage, and developing more reliable security orchestration capabilities.
+
